@@ -316,3 +316,57 @@ async def test_help_and_notification_buttons(env, svc):
     # Back from a lesson opened via notification leads to its subject's lessons, then the menu.
     await click(admin, mm, "All lessons")
     assert "Backnote" in await click(admin, mm, "Back")
+
+
+async def test_stale_button_restarts_the_menu(env, svc):
+    """A button from a dialog created before a restart must not raise; the menu is re-sent."""
+    from datetime import datetime
+
+    from aiogram.types import CallbackQuery, ErrorEvent, Message, Update
+    from aiogram_dialog.api.exceptions import UnknownIntent
+
+    from backnote.bot.dialogs.states import MainSG
+    from backnote.bot.handlers import on_stale_dialog
+
+    _, bot, _, admin = env
+    await admin.send("/start")
+
+    class FakeBgManager:
+        def __init__(self) -> None:
+            self.started: list = []
+
+        async def start(self, state, **kwargs):
+            self.started.append(state)
+
+    class FakeBgFactory:
+        def __init__(self) -> None:
+            self.manager = FakeBgManager()
+
+        def bg(self, **kwargs):
+            return self.manager
+
+    stale = Message(
+        message_id=90,
+        date=datetime.now(),
+        chat=admin.chat,
+        from_user=admin.user,
+        text="old menu",
+    )
+    callback = CallbackQuery(
+        id="stale",
+        chat_instance="-",
+        from_user=admin.user,
+        message=stale,
+        data="aiogd_update::nonexistent-intent",
+    ).as_(bot)
+    factory = FakeBgFactory()
+    error = ErrorEvent(
+        update=Update(update_id=901, callback_query=callback).as_(bot),
+        exception=UnknownIntent("intent is gone"),
+    )
+    # Must not raise: ErrorEvent has no `from_user`, which broke the earlier implementation.
+    await on_stale_dialog(error, bg_factory=factory)
+
+    assert factory.manager.started == [MainSG.menu]
+    answered = [c for c in bot.calls if type(c).__name__ == "AnswerCallbackQuery"]
+    assert answered and "outdated" in answered[-1].text

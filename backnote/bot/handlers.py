@@ -1,9 +1,10 @@
 import logging
+from functools import partial
 
 from aiogram import F, Router
 from aiogram.filters import Command, CommandObject, CommandStart, ExceptionTypeFilter
 from aiogram.types import CallbackQuery, ErrorEvent, Message
-from aiogram_dialog import DialogManager, ShowMode, StartMode
+from aiogram_dialog import BgManagerFactory, DialogManager, ShowMode, StartMode
 from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
 
 from backnote.bot.callbacks import AccessCb, OpenCb
@@ -105,19 +106,30 @@ async def fallback(message: Message, dialog_manager: DialogManager) -> None:
     await dialog_manager.start(MainSG.menu, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND)
 
 
-async def on_stale_dialog(event: ErrorEvent, dialog_manager: DialogManager) -> None:
-    """Buttons from before a restart point to lost dialog state — start over gracefully."""
+async def on_stale_dialog(event: ErrorEvent, bg_factory: BgManagerFactory) -> None:
+    """Buttons from before a restart point to lost dialog state — start over gracefully.
+
+    Error events are not chat events, so `dialog_manager` is unavailable here and a background
+    manager addresses the chat directly instead.
+    """
     log.info("Restarting dialog after %r", event.exception)
-    if event.update.callback_query:
-        await event.update.callback_query.answer("This menu is outdated, opening a fresh one.")
-    await dialog_manager.start(MainSG.menu, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND)
+    callback = event.update.callback_query
+    if callback:
+        await callback.answer("This menu is outdated — opening a fresh one.")
+    message = callback.message if callback else event.update.message
+    if message is None or message.from_user is None:
+        return
+    await bg_factory.bg(
+        bot=message.bot, user_id=message.from_user.id, chat_id=message.chat.id
+    ).start(MainSG.menu, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND)
 
 
-def build_routers() -> tuple[Router, Router, Router]:
+def build_routers(bg_factory: BgManagerFactory) -> tuple[Router, Router, Router]:
     """(errors, commands, fallback) — fresh instances, since a router attaches to one parent."""
     errors = Router(name="errors")
     errors.error.register(
-        on_stale_dialog, ExceptionTypeFilter(UnknownIntent, OutdatedIntent, UnknownState)
+        partial(on_stale_dialog, bg_factory=bg_factory),
+        ExceptionTypeFilter(UnknownIntent, OutdatedIntent, UnknownState),
     )
 
     commands = Router(name="commands")

@@ -42,7 +42,8 @@ def build_dispatcher(
     dp.callback_query.outer_middleware(access)
 
     # Commands go first so /start works everywhere; the catch-all goes last so dialog inputs win.
-    errors, commands, fallback = build_routers()
+    # setup_dialogs first, so its background-manager factory can be handed to the error handler.
+    bg_factory = setup_dialogs(dp, message_manager=message_manager)
+    errors, commands, fallback = build_routers(bg_factory)
     dp.include_routers(errors, commands, *all_dialogs(), fallback)
-    setup_dialogs(dp, message_manager=message_manager)
     return dp
