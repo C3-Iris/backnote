@@ -23,8 +23,8 @@ PRIMARY = Style(ButtonStyle.PRIMARY)
 SUCCESS = Style(ButtonStyle.SUCCESS)
 DANGER = Style(ButtonStyle.DANGER)
 
-BACK = Const("Back")
-CANCEL = Const("Cancel")
+BACK = Const("⬅️ Back")
+CANCEL = Const("✖️ Cancel")
 
 
 def svc(m: DialogManager) -> Services:
@@ -143,7 +143,7 @@ def field_editor_window(
         current = await load(dialog_manager, field.key)
         return {
             "text": (
-                f"<b>{h(field.label)}</b>\n\nCurrent: {field.show(current)}\n\n"
+                f"✏️ <b>{h(field.label)}</b>\n\nCurrent: {field.show(current)}\n\n"
                 f"<i>{h(field.prompt)}</i>"
             ),
             "optional": field.optional and current not in (None, ""),
@@ -166,7 +166,7 @@ def field_editor_window(
     return Window(
         Format("{text}"),
         MessageInput(on_input, content_types=["text"]),
-        Button(Const("Clear"), id="clear", on_click=on_clear, when="optional"),
+        Button(Const("🧹 Clear"), id="clear", on_click=on_clear, when="optional"),
         SwitchTo(BACK, id="back", state=back_state),
         state=state,
         getter=getter,

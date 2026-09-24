@@ -10,26 +10,26 @@ personal progress and notes. No grades, deadlines or teachers — just a place t
 
 - **Whitelist access** — one admin (from `ADMIN_ID`) and a list of members. Strangers who press
   `/start` send an access request that the admin approves with one tap.
-- **Subjects** — university subjects (Software Engineering programme) tagged with study
+- **📘 Subjects** — university subjects (Software Engineering programme) tagged with study
   *year* and *term* (3 terms a year); the list shows the newest term first.
   Code, instructor, ECTS, description, link; archive old terms instead of deleting them.
-- **Courses** — online courses and extra tracks (AI, agents, Coursera/edX, bootcamps…)
+- **🎯 Courses** — online courses and extra tracks (AI, agents, Coursera/edX, bootcamps…)
   with provider and link. Same structure as subjects.
-- **Lessons** — lecture / seminar / practice / lab / video / reading, auto-numbered per type.
+- **🎓 Lessons** — lecture / seminar / practice / lab / video / reading, auto-numbered per type.
   YouTube recordings show a large preview right in the chat. Prev/next navigation and a
   shareable deep link (`t.me/<bot>?start=l42`).
-- **Personal progress** — each member marks lessons as completed independently; progress
+- **✅ Personal progress** — each member marks lessons as completed independently; progress
   bars per subject, overall stats and a *Continue* button for the next unfinished lesson.
-- **Private notes** per lesson.
-- **Materials** — files (PDF, slides, photos, video, audio) or links attached to a subject
+- **🗒 Private notes** per lesson.
+- **📎 Materials** — files (PDF, slides, photos, video, audio) or links attached to a subject
   or a lesson. Forward several files at once.
-- **Summaries** — shown as Telegram **Rich Messages** (Bot API 10.1+): headings, tables,
+- **🧠 Summaries** — shown as Telegram **Rich Messages** (Bot API 10.1+): headings, tables,
   task lists, LaTeX formulas, collapsible answers. Write them yourself (text or `.md` file) or
   generate them with **Gemini** for free from a public YouTube recording.
-- **Notifications** — members get a message when a new lesson is added
+- **🔔 Notifications** — members get a message when a new lesson is added
   (can be turned off in Settings).
-- **Search** across subjects, lesson titles, descriptions and summaries.
-- **Admin panel** — members, requests, add by ID/contact/forward, block/remove, broadcast.
+- **🔎 Search** across subjects, lesson titles, descriptions and summaries.
+- **🛡 Admin panel** — members, requests, add by ID/contact/forward, block/remove, broadcast.
 
 ## Quick start
 

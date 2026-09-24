@@ -63,7 +63,7 @@ def lesson_heading(lesson: Lesson) -> str:
 
 
 def lesson_button(lesson: Lesson, done: bool) -> str:
-    mark = "✓ " if done else ""
+    mark = "✅ " if done else ""
     return f"{mark}{lesson_code(lesson)} · {lesson.title}"
 
 
@@ -191,11 +191,11 @@ def quote(text: str, *, expandable: bool | None = None) -> str:
 def summary_markdown(lesson: Lesson, subject: Subject, *, source_line: str | None = None) -> str:
     """Rich Markdown document for sendRichMessage (headings, tables, formulas…)."""
     header = [
-        f"# {_md_escape(lesson_heading(lesson))}",
+        f"# {lesson_kind(lesson.kind).emoji} {_md_escape(lesson_heading(lesson))}",
         f"*{_md_escape(subject.title)}*",
     ]
     if lesson.video_url:
-        header.append(f"[Watch the recording]({lesson.video_url})")
+        header.append(f"[▶️ Watch the recording]({lesson.video_url})")
     parts = ["\n\n".join(header), "---", (lesson.summary or "").strip()]
     if source_line:
         parts += ["---", f"_{_md_escape(source_line)}_"]

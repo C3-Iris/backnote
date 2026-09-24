@@ -7,7 +7,7 @@ from backnote.bot.dialogs.common import BACK, PRIMARY, settings, svc, uid
 from backnote.bot.dialogs.states import AdminSG, LessonsSG, MainSG, SearchSG, SubjectsSG
 from backnote.bot.rich import send_markdown
 from backnote.db.models import SubjectKind
-from backnote.formatting import h, lesson_code, percent, progress_bar
+from backnote.formatting import SUBJECT_KINDS, h, lesson_code, percent, progress_bar
 
 
 async def menu_getter(dialog_manager: DialogManager, **_):
@@ -19,19 +19,20 @@ async def menu_getter(dialog_manager: DialogManager, **_):
     cont = await s.progress.continue_lesson(user_id)
 
     lines = [
-        "<b>Backnote</b> — your shared study base",
-        f"<blockquote>{subjects} subjects · {courses} courses · {lessons} lessons\n"
-        f"You completed {done} of them</blockquote>",
+        "📚 <b>Backnote</b>",
+        f"<blockquote>Your shared study base\n"
+        f"📘 {subjects} subjects · 🎯 {courses} courses · 🎓 {lessons} lessons\n"
+        f"✅ You completed {done}</blockquote>",
     ]
     if cont:
         lesson, subject = cont
-        lines.append(f"Up next: <b>{h(subject.title)}</b> — {h(lesson.title)}")
+        lines.append(f"▶️ Up next in <b>{h(subject.title)}</b>:\n{h(lesson.title)}")
 
     return {
         "text": "\n".join(lines),
         "is_admin": user_id == settings(dialog_manager).admin_id,
         "has_continue": cont is not None,
-        "continue_label": f"▶ Continue: {lesson_code(cont[0])}" if cont else "",
+        "continue_label": f"▶️ Continue: {lesson_code(cont[0])}" if cont else "",
     }
 
 
@@ -45,17 +46,17 @@ async def on_continue(_c: CallbackQuery, _b, manager: DialogManager) -> None:
 async def progress_getter(dialog_manager: DialogManager, **_):
     rows = await svc(dialog_manager).progress.overview(uid(dialog_manager))
     if not rows:
-        return {"text": "<b>Your progress</b>\n\n<blockquote>No lessons yet.</blockquote>"}
+        return {"text": "📊 <b>Your progress</b>\n\n<blockquote>No lessons yet.</blockquote>"}
     total = sum(r.total for r in rows)
     done = sum(r.done for r in rows)
     blocks = [
-        f"<b>{h(r.subject.title)}</b>\n"
+        f"{SUBJECT_KINDS[r.subject.kind].emoji} <b>{h(r.subject.title)}</b>\n"
         f"<code>{progress_bar(r.done, r.total)}</code> {r.done}/{r.total} · "
         f"{percent(r.done, r.total)}%"
         for r in rows
     ]
     text = (
-        "<b>Your progress</b>\n"
+        "📊 <b>Your progress</b>\n"
         f"<blockquote>Overall: <b>{done}/{total}</b> lessons · {percent(done, total)}%\n"
         f"<code>{progress_bar(done, total, 16)}</code></blockquote>\n\n" + "\n\n".join(blocks)
     )
@@ -64,7 +65,9 @@ async def progress_getter(dialog_manager: DialogManager, **_):
 
 async def settings_getter(dialog_manager: DialogManager, **_):
     user = await svc(dialog_manager).users.get(uid(dialog_manager))
-    return {"new_label": f"New lessons: {'on' if user.notify_new_content else 'off'}"}
+    return {
+        "new_label": f"🔔 New lessons: {'on' if user.notify_new_content else 'off'}",
+    }
 
 
 async def toggle_new_content(_c: CallbackQuery, _b, manager: DialogManager) -> None:
@@ -77,19 +80,19 @@ async def toggle_new_content(_c: CallbackQuery, _b, manager: DialogManager) -> N
 # Telegram keeps line breaks from the source, so each paragraph is a single line.
 HELP = "\n\n".join(
     [
-        "<b>How Backnote works</b>",
-        "<b>Subjects</b> are university courses of your programme, tagged with study year and "
-        "term (3 terms a year). <b>Courses</b> are online courses and extra tracks: AI, agents, "
-        "Coursera, YouTube playlists.",
-        "Inside each one there are <b>lessons</b> (numbered lectures with a recording link, "
-        "materials, a summary and your private note) and <b>materials</b> for the whole subject "
-        "(syllabus, slides, books).",
-        "<b>Personal:</b> completion marks and notes.\n"
-        "<b>Shared:</b> subjects, lessons, materials and summaries.",
-        "<b>Summaries</b> are sent as Telegram rich messages, so full Markdown works: headings, "
-        "tables, lists, formulas, code blocks and collapsible sections. Tap the button below to "
-        "see an example.",
-        "/start — main menu · /id — your Telegram ID",
+        "❔ <b>How Backnote works</b>",
+        "📘 <b>Subjects</b> are university courses of your programme, tagged with study year "
+        "and term (3 terms a year).\n🎯 <b>Courses</b> are online courses and extra tracks: AI, "
+        "agents, Coursera, YouTube playlists.",
+        "Inside each one:\n"
+        "🎓 <b>Lessons</b> — numbered lectures with a recording link, a summary and your note.\n"
+        "📎 <b>Materials</b> — syllabus, slides, books, useful links.",
+        "<blockquote>🔒 <b>Personal:</b> completion marks and notes — only you see them.\n"
+        "👥 <b>Shared:</b> subjects, lessons, materials and summaries.</blockquote>",
+        "🧠 <b>Summaries</b> are sent as Telegram rich messages, so full Markdown works: "
+        "headings, lists, tables, formulas, code blocks and collapsible answers.\n"
+        "<i>Tap the button below to see a live example.</i>",
+        "<b>Commands</b>\n/start — main menu\n/id — your Telegram ID",
     ]
 )
 
@@ -162,9 +165,9 @@ def main_dialog() -> Dialog:
                 SwitchTo(Const("📊 Progress"), id="progress", state=MainSG.progress),
             ),
             Row(
-                SwitchTo(Const("Settings"), id="settings", state=MainSG.settings),
-                SwitchTo(Const("Help"), id="help", state=MainSG.help),
-                Start(Const("Admin"), id="admin", state=AdminSG.menu, when="is_admin"),
+                SwitchTo(Const("⚙️ Settings"), id="settings", state=MainSG.settings),
+                SwitchTo(Const("❔ Help"), id="help", state=MainSG.help),
+                Start(Const("🛡 Admin"), id="admin", state=AdminSG.menu, when="is_admin"),
             ),
             state=MainSG.menu,
             getter=menu_getter,

@@ -102,7 +102,7 @@ async def test_full_study_flow(env, svc):
 
     await click(admin, mm, "Read")
     rich = [c for c in bot.calls if type(c).__name__ == "SendRichMessage"]
-    assert rich and "# Lecture 1" in rich[-1].rich_message.markdown
+    assert rich and "# 🎓 Lecture 1" in rich[-1].rich_message.markdown
     assert "$P = a - bQ$" in rich[-1].rich_message.markdown
 
     await click(admin, mm, "Back")

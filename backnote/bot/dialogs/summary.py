@@ -48,7 +48,9 @@ async def send_summary(bot: Bot, svc_: Services, tz, chat_id: int, lesson_id: in
     if lesson is None or not lesson.summary:
         return False
     subject = await svc_.subjects.get(lesson.subject_id)
-    source = "AI-generated with Gemini" if lesson.summary_source == SummarySource.AI else "Written"
+    source = (
+        "✨ AI-generated with Gemini" if lesson.summary_source == SummarySource.AI else "✍️ Written"
+    )
     author = await svc_.users.get(lesson.summary_by) if lesson.summary_by else None
     parts = [source]
     if author and lesson.summary_source != SummarySource.AI:
@@ -69,9 +71,9 @@ async def main_getter(dialog_manager: DialogManager, **_):
     youtube = youtube_watch_url(lesson.video_url)
     generating = lesson.id in GENERATING
 
-    lines = [f"<b>Summary</b> · {h(lesson_heading(lesson))}"]
+    lines = [f"🧠 <b>Summary</b> · {h(lesson_heading(lesson))}"]
     if lesson.summary:
-        source = "AI-generated" if lesson.summary_source == SummarySource.AI else "Written"
+        source = "✨ AI-generated" if lesson.summary_source == SummarySource.AI else "✍️ Written"
         updated = fmt_datetime(lesson.summary_updated_at, tz) if lesson.summary_updated_at else ""
         preview = lesson.summary.strip()
         if len(preview) > 600:
@@ -98,8 +100,8 @@ async def main_getter(dialog_manager: DialogManager, **_):
         "text": "\n".join(lines),
         "has_summary": bool(lesson.summary),
         "can_generate": ai_ready and bool(youtube) and not generating,
-        "write_label": "Replace" if lesson.summary else "Write",
-        "ai_label": "Regenerate with AI" if lesson.summary else "Generate with AI",
+        "write_label": "✍️ Replace" if lesson.summary else "✍️ Write",
+        "ai_label": "✨ Regenerate with AI" if lesson.summary else "✨ Generate with AI",
     }
 
 
@@ -194,11 +196,15 @@ def summary_dialog() -> Dialog:
     return Dialog(
         Window(
             Format("{text}"),
-            Button(Const("Read"), id="read", on_click=on_read, when="has_summary", style=PRIMARY),
+            Button(
+                Const("📖 Read"), id="read", on_click=on_read, when="has_summary", style=PRIMARY
+            ),
             Button(Format("{ai_label}"), id="ai", on_click=on_generate, when="can_generate"),
             Row(
                 SwitchTo(Format("{write_label}"), id="write", state=SummarySG.input),
-                SwitchTo(Const("Delete"), id="delete", state=SummarySG.delete, when="has_summary"),
+                SwitchTo(
+                    Const("🗑 Delete"), id="delete", state=SummarySG.delete, when="has_summary"
+                ),
             ),
             Cancel(BACK),
             state=SummarySG.main,
@@ -218,9 +224,9 @@ def summary_dialog() -> Dialog:
             state=SummarySG.input,
         ),
         Window(
-            Const("Delete this summary for everyone?"),
+            Const("🗑 Delete this summary for everyone?"),
             Row(
-                Button(Const("Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
+                Button(Const("🗑 Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
                 SwitchTo(CANCEL, id="cancel", state=SummarySG.main),
             ),
             state=SummarySG.delete,

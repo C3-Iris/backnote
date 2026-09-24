@@ -82,7 +82,7 @@ def search_dialog() -> Dialog:
                 hide_on_single_page=True,
             ),
             MessageInput(on_query, content_types=["text"]),
-            SwitchTo(Const("New search"), id="again", state=SearchSG.query),
+            SwitchTo(Const("🔁 New search"), id="again", state=SearchSG.query),
             Cancel(BACK),
             state=SearchSG.results,
             getter=results_getter,

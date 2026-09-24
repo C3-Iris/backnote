@@ -61,7 +61,7 @@ async def list_getter(dialog_manager: DialogManager, **_):
             "grading policy, useful links.</blockquote>"
         )
     return {
-        "text": f"<b>Materials</b> · {context}\n\n{hint}",
+        "text": f"📎 <b>Materials</b> · {context}\n\n{hint}",
         "items": [
             {"id": m.id, "label": f"{MATERIAL_EMOJI.get(m.kind, '')} {m.title}"} for m in materials
         ],
@@ -190,7 +190,7 @@ async def add_getter(dialog_manager: DialogManager, **_):
     )
     return {
         "text": (
-            "<b>Add materials</b>\n\nSend files (PDF, slides, photos, video, audio) or links. "
+            "📎 <b>Add materials</b>\n\nSend files (PDF, slides, photos, video, audio) or links. "
             "Several at once is fine; the caption or file name becomes the title." + status
         ),
         "has_last": last is not None,
@@ -259,7 +259,7 @@ def materials_dialog() -> Dialog:
                 height=8,
                 hide_on_single_page=True,
             ),
-            SwitchTo(Const("Add"), id="add", state=MaterialsSG.add, style=PRIMARY),
+            SwitchTo(Const("➕ Add"), id="add", state=MaterialsSG.add, style=PRIMARY),
             Cancel(BACK),
             state=MaterialsSG.list,
             getter=list_getter,
@@ -267,25 +267,27 @@ def materials_dialog() -> Dialog:
         Window(
             Format("{text}"),
             MessageInput(on_add_input),
-            Button(Const("Rename last"), id="rename", on_click=start_rename_last, when="has_last"),
-            Button(Const("Done"), id="done", on_click=finish_adding),
+            Button(
+                Const("✏️ Rename last"), id="rename", on_click=start_rename_last, when="has_last"
+            ),
+            Button(Const("✅ Done"), id="done", on_click=finish_adding),
             state=MaterialsSG.add,
             getter=add_getter,
         ),
         Window(
             Format("{text}"),
             DynamicPreview(),
-            Url(Const("Open link"), Format("{url}"), when="url"),
-            Button(Const("Send again"), id="resend", on_click=on_resend, when="is_file"),
+            Url(Const("🔗 Open link"), Format("{url}"), when="url"),
+            Button(Const("📤 Send again"), id="resend", on_click=on_resend, when="is_file"),
             Row(
                 Button(
-                    Const("Rename"),
+                    Const("✏️ Rename"),
                     id="rename",
                     on_click=start_rename,
                     when=lambda d, *_: not d["missing"],
                 ),
                 SwitchTo(
-                    Const("Delete"),
+                    Const("🗑 Delete"),
                     id="delete",
                     state=MaterialsSG.delete,
                     when="can_delete",
@@ -297,16 +299,16 @@ def materials_dialog() -> Dialog:
             getter=view_getter,
         ),
         Window(
-            Format("Current title: <b>{title}</b>\n\nSend a new title."),
+            Format("✏️ Current title: <b>{title}</b>\n\nSend a new title."),
             MessageInput(on_rename, content_types=["text"]),
             Button(CANCEL, id="cancel", on_click=cancel_rename),
             state=MaterialsSG.rename,
             getter=rename_getter,
         ),
         Window(
-            Const("Delete this material for everyone?"),
+            Const("🗑 Delete this material for everyone?"),
             Row(
-                Button(Const("Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
+                Button(Const("🗑 Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
                 SwitchTo(CANCEL, id="cancel", state=MaterialsSG.view),
             ),
             state=MaterialsSG.delete,

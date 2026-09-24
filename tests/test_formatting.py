@@ -65,7 +65,7 @@ def test_split_text_respects_limit():
 def test_summary_markdown_escapes_titles():
     lesson = Lesson(number=2, kind="lecture", title="Costs *and* [profit]", summary="## Body")
     md = summary_markdown(lesson, Subject(title="Micro_1"), source_line="Written")
-    assert "# Lecture 2 · Costs \\*and\\* \\[profit\\]" in md
+    assert "# 🎓 Lecture 2 · Costs \\*and\\* \\[profit\\]" in md
     assert "*Micro\\_1*" in md
     assert md.rstrip().endswith("_Written_")
     assert "## Body" in md
