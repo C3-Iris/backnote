@@ -48,7 +48,7 @@ from backnote.formatting import (
 )
 
 YEARS = [1, 2, 3, 4]
-TERMS = [1, 2, 3, 4, 5]
+TERMS = [1, 2, 3]
 
 SUBJECT_FIELDS = {
     f.key: f
@@ -279,7 +279,7 @@ def _year_term_selects(on_year_click, on_term_click) -> list:
                 type_factory=int,
                 on_click=on_term_click,
             ),
-            width=5,
+            width=3,
         ),
     ]
 
@@ -368,7 +368,7 @@ def subjects_dialog() -> Dialog:
         Window(
             Format(
                 "🗓 <b>Year & term</b>\n\nCurrent: <b>{current}</b>\n\n"
-                "<i>KSE splits the academic year into 5 mini-terms of ~2 months.</i>"
+                "<i>The academic year is split into 3 terms.</i>"
             ),
             *_year_term_selects(on_year, on_term),
             Row(
@@ -463,7 +463,7 @@ async def skip_description(_c: CallbackQuery, _b, manager: DialogManager) -> Non
 
 async def create_title_getter(dialog_manager: DialogManager, **_):
     kind = kind_of(dialog_manager)
-    example = "Microeconomics I" if kind == SubjectKind.SUBJECT else "Machine Learning (Coursera)"
+    example = "Programming Paradigms" if kind == SubjectKind.SUBJECT else "Deep Learning (Coursera)"
     return {"label": SUBJECT_KINDS[kind].label.lower(), "example": example}
 
 
@@ -478,7 +478,7 @@ def subject_create_dialog() -> Dialog:
         ),
         Window(
             Format(
-                "🗓 <b>{title}</b>\n\nWhen is it taught? Pick the study year and mini-term.\n"
+                "🗓 <b>{title}</b>\n\nWhen is it taught? Pick the study year and term.\n"
                 "Selected: <b>{current}</b>"
             ),
             *_year_term_selects(create_year, create_term),

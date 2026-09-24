@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-flash-latest"
-    summary_language: str = "English"
+    summary_language: str = "Ukrainian"
 
     @cached_property
     def tz(self) -> ZoneInfo:

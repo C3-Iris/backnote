@@ -33,6 +33,8 @@ A Markdown table | Time | Topic | with 5-12 rows using mm:ss or h:mm:ss timestam
 ## 📌 Takeaways
 3 bullet points to remember for the exam.
 
+Keep established technical terms, code, commands and library names in English
+(add the translation in parentheses on first use where helpful). Put code in fenced blocks.
 Keep it factual, skip small talk and organisational announcements unless they concern
 deadlines or exams (put those in a final "## 📣 Announcements" section)."""
 
@@ -42,7 +44,7 @@ class SummaryError(RuntimeError):
 
 
 class GeminiSummarizer:
-    def __init__(self, api_key: str, model: str, language: str = "English") -> None:
+    def __init__(self, api_key: str, model: str, language: str = "Ukrainian") -> None:
         self._api_key = api_key
         self._model = model
         self._language = language
