@@ -10,10 +10,10 @@ keeping personal progress, notes and deadline status.
 
 - **Whitelist access** — one admin (from `ADMIN_ID`) and a list of members. Strangers who press
   `/start` send an access request that the admin approves with one tap.
-- **📘 Subjects** — university subjects tagged with study *year* and *mini-term*. KSE runs
-  5 two-month terms a year with ~3 subjects at a time, so the list shows the newest term first.
+- **📘 Subjects** — university subjects (Software Engineering programme) tagged with study
+  *year* and *term* (3 terms a year); the list shows the newest term first.
   Code, instructor, ECTS, description, link; archive old terms instead of deleting them.
-- **🎯 Courses** — online courses and extra tracks (KSE electives on Coursera/edX, bootcamps…)
+- **🎯 Courses** — online courses and extra tracks (AI, agents, Coursera/edX, bootcamps…)
   with provider and link. Same structure as subjects.
 - **🎓 Lessons** — lecture / seminar / practice / lab / video / reading, auto-numbered per type.
   YouTube recordings show a large preview right in the chat. Prev/next navigation and a
@@ -60,7 +60,7 @@ The SQLite database lives in `./data/backnote.db`.
 | `REMINDER_HOURS` | `24` | How long before a deadline to remind |
 | `GEMINI_API_KEY` | — | Enables AI summaries ([get a free key](https://aistudio.google.com/apikey)) |
 | `GEMINI_MODEL` | `gemini-flash-latest` | Any Gemini model that supports video |
-| `SUMMARY_LANGUAGE` | `English` | Language of AI summaries |
+| `SUMMARY_LANGUAGE` | `Ukrainian` | Language of AI summaries |
 
 ### AI summaries
 

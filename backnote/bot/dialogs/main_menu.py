@@ -145,8 +145,8 @@ async def toggle_setting(_c: CallbackQuery, button: Button, manager: DialogManag
 
 HELP = """❔ <b>How Backnote works</b>
 
-<b>📘 Subjects</b> — university courses of your programme. KSE runs 5 mini-terms a year with
-about 3 subjects at a time, so every subject can be tagged with its <i>year</i> and <i>term</i>.
+<b>📘 Subjects</b> — university courses of your programme. The year has 3 terms, so every
+subject can be tagged with its <i>year</i> and <i>term</i>.
 <b>🎯 Courses</b> — online courses and extra tracks (Coursera, edX, bootcamps…).
 
 Inside each one you will find:
