@@ -7,7 +7,7 @@ from backnote.services.base import BaseService, apply_fields
 
 
 class UserService(BaseService):
-    SETTINGS = frozenset({"notify_new_content", "notify_deadlines"})
+    SETTINGS = frozenset({"notify_new_content"})
 
     def __init__(self, sessionmaker: async_sessionmaker, admin_id: int) -> None:
         super().__init__(sessionmaker)

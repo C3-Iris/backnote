@@ -1,14 +1,10 @@
-from datetime import UTC, datetime, timedelta
-
 import pytest
 
-from backnote.bot.dialogs.common import Field, parse_time
+from backnote.bot.dialogs.common import Field
 from backnote.db.models import Lesson, Subject
 from backnote.formatting import (
-    deadline_badge,
     normalize_url,
     progress_bar,
-    relative,
     split_text,
     subject_button,
     summary_markdown,
@@ -56,16 +52,7 @@ def test_progress_bar():
 def test_subject_button_marks_finished():
     subject = Subject(title="Micro", year=1, term=3)
     assert subject_button(subject, 4, 2) == "[Y1T3] Micro · 2/4"
-    assert subject_button(subject, 4, 4) == "[Y1T3] Micro · 🏁"
-
-
-def test_relative_and_badge():
-    now = datetime(2026, 1, 1, tzinfo=UTC)
-    assert relative(now + timedelta(days=2, hours=1), now) == "in 2 days"
-    assert relative(now - timedelta(hours=5), now) == "5 h ago"
-    assert deadline_badge(now - timedelta(minutes=1), now) == "🔴"
-    assert deadline_badge(now + timedelta(hours=3), now) == "🟠"
-    assert deadline_badge(now + timedelta(days=10), now) == "🟢"
+    assert subject_button(subject, 4, 4) == "[Y1T3] Micro · done ✓"
 
 
 def test_split_text_respects_limit():
@@ -78,7 +65,7 @@ def test_split_text_respects_limit():
 def test_summary_markdown_escapes_titles():
     lesson = Lesson(number=2, kind="lecture", title="Costs *and* [profit]", summary="## Body")
     md = summary_markdown(lesson, Subject(title="Micro_1"), source_line="Written")
-    assert "# 🎓 Lecture 2 · Costs \\*and\\* \\[profit\\]" in md
+    assert "# Lecture 2 · Costs \\*and\\* \\[profit\\]" in md
     assert "*Micro\\_1*" in md
     assert md.rstrip().endswith("_Written_")
     assert "## Body" in md
@@ -91,13 +78,6 @@ def test_field_parse():
     assert Field("u", "U", "", "url").parse("kse.ua") == "https://kse.ua"
     with pytest.raises(ValueError):
         Field("t", "T", "", max_len=3).parse("long")
-
-
-def test_parse_time():
-    assert parse_time("23:59").hour == 23
-    assert parse_time("9").hour == 9
-    with pytest.raises(ValueError):
-        parse_time("25:00")
 
 
 async def test_dynamic_preview():

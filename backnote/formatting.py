@@ -2,7 +2,7 @@
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from html import escape
 from urllib.parse import parse_qs, urlparse
 from zoneinfo import ZoneInfo
@@ -63,8 +63,8 @@ def lesson_heading(lesson: Lesson) -> str:
 
 
 def lesson_button(lesson: Lesson, done: bool) -> str:
-    mark = "✅" if done else lesson_kind(lesson.kind).emoji
-    return f"{mark} {lesson_code(lesson)} · {lesson.title}"
+    mark = "✓ " if done else ""
+    return f"{mark}{lesson_code(lesson)} · {lesson.title}"
 
 
 def term_label(year: int | None, term: int | None) -> str | None:
@@ -104,7 +104,7 @@ def progress_line(done: int, total: int) -> str:
 def subject_button(subject: Subject, total: int, done: int) -> str:
     tag = term_short(subject.year, subject.term)
     prefix = f"[{tag}] " if tag else ""
-    status = "🏁" if total and done == total else f"{done}/{total}"
+    status = "done ✓" if total and done == total else f"{done}/{total}"
     return f"{prefix}{subject.title} · {status}"
 
 
@@ -180,34 +180,6 @@ def fmt_date(d: date) -> str:
     return d.strftime("%a, %d %b %Y")
 
 
-def relative(dt: datetime, now: datetime | None = None) -> str:
-    now = now or datetime.now(UTC)
-    delta = dt - now
-    seconds = delta.total_seconds()
-    future = seconds >= 0
-    seconds = abs(seconds)
-    if seconds < 3600:
-        amount = f"{max(1, int(seconds // 60))} min"
-    elif seconds < 86400:
-        amount = f"{int(seconds // 3600)} h"
-    else:
-        days = int(seconds // 86400)
-        amount = f"{days} day{'s' if days != 1 else ''}"
-    return f"in {amount}" if future else f"{amount} ago"
-
-
-def deadline_badge(due: datetime, now: datetime | None = None) -> str:
-    now = now or datetime.now(UTC)
-    seconds = (due - now).total_seconds()
-    if seconds < 0:
-        return "🔴"
-    if seconds < 86400:
-        return "🟠"
-    if seconds < 3 * 86400:
-        return "🟡"
-    return "🟢"
-
-
 def quote(text: str, *, expandable: bool | None = None) -> str:
     """HTML block quote; long texts collapse automatically."""
     if expandable is None:
@@ -218,13 +190,12 @@ def quote(text: str, *, expandable: bool | None = None) -> str:
 
 def summary_markdown(lesson: Lesson, subject: Subject, *, source_line: str | None = None) -> str:
     """Rich Markdown document for sendRichMessage (headings, tables, formulas…)."""
-    meta = lesson_kind(lesson.kind)
     header = [
-        f"# {meta.emoji} {_md_escape(lesson_heading(lesson))}",
+        f"# {_md_escape(lesson_heading(lesson))}",
         f"*{_md_escape(subject.title)}*",
     ]
     if lesson.video_url:
-        header.append(f"[▶️ Watch the recording]({lesson.video_url})")
+        header.append(f"[Watch the recording]({lesson.video_url})")
     parts = ["\n\n".join(header), "---", (lesson.summary or "").strip()]
     if source_line:
         parts += ["---", f"_{_md_escape(source_line)}_"]

@@ -69,9 +69,9 @@ async def main_getter(dialog_manager: DialogManager, **_):
     youtube = youtube_watch_url(lesson.video_url)
     generating = lesson.id in GENERATING
 
-    lines = [f"🧠 <b>Summary</b> · {h(lesson_heading(lesson))}"]
+    lines = [f"<b>Summary</b> · {h(lesson_heading(lesson))}"]
     if lesson.summary:
-        source = "✨ AI-generated" if lesson.summary_source == SummarySource.AI else "✍️ Written"
+        source = "AI-generated" if lesson.summary_source == SummarySource.AI else "Written"
         updated = fmt_datetime(lesson.summary_updated_at, tz) if lesson.summary_updated_at else ""
         preview = lesson.summary.strip()
         if len(preview) > 600:
@@ -87,20 +87,19 @@ async def main_getter(dialog_manager: DialogManager, **_):
             "lists, tables, $formulas$, spoilers.</blockquote>"
         )
     if generating:
-        lines.append("\n⏳ <b>AI is watching the lecture…</b> I'll message you when it's done.")
+        lines.append("\n<b>AI is watching the lecture…</b> I'll message you when it's done.")
     elif not ai_ready:
         lines.append(
-            "\n💡 <i>AI summaries are off. The admin can enable them with a free "
-            "GEMINI_API_KEY.</i>"
+            "\n<i>AI summaries are off. The admin can enable them with a free GEMINI_API_KEY.</i>"
         )
     elif not youtube:
-        lines.append("\n💡 <i>AI summaries need a public YouTube recording link.</i>")
+        lines.append("\n<i>AI summaries need a public YouTube recording link.</i>")
     return {
         "text": "\n".join(lines),
         "has_summary": bool(lesson.summary),
         "can_generate": ai_ready and bool(youtube) and not generating,
-        "write_label": "✍️ Replace" if lesson.summary else "✍️ Write",
-        "ai_label": "✨ Regenerate with AI" if lesson.summary else "✨ Generate with AI",
+        "write_label": "Replace" if lesson.summary else "Write",
+        "ai_label": "Regenerate with AI" if lesson.summary else "Generate with AI",
     }
 
 
@@ -130,8 +129,8 @@ async def _generate(
         await s.lessons.set_summary(lesson_id, text, SummarySource.AI, user_id)
         await bot.send_message(
             chat_id,
-            f"✨ <b>Summary ready</b>\n<blockquote>{h(lesson_heading(lesson))}</blockquote>",
-            reply_markup=open_kb("summary", lesson_id, "📖 Read summary"),
+            f"<b>Summary ready</b>\n<blockquote>{h(lesson_heading(lesson))}</blockquote>",
+            reply_markup=open_kb("summary", lesson_id, "Read summary"),
         )
     except SummaryError as exc:
         await bot.send_message(chat_id, f"⚠️ Could not generate the summary:\n<i>{h(exc)}</i>")
@@ -195,15 +194,11 @@ def summary_dialog() -> Dialog:
     return Dialog(
         Window(
             Format("{text}"),
-            Button(
-                Const("📖 Read"), id="read", on_click=on_read, when="has_summary", style=PRIMARY
-            ),
+            Button(Const("Read"), id="read", on_click=on_read, when="has_summary", style=PRIMARY),
             Button(Format("{ai_label}"), id="ai", on_click=on_generate, when="can_generate"),
             Row(
                 SwitchTo(Format("{write_label}"), id="write", state=SummarySG.input),
-                SwitchTo(
-                    Const("🗑 Delete"), id="delete", state=SummarySG.delete, when="has_summary"
-                ),
+                SwitchTo(Const("Delete"), id="delete", state=SummarySG.delete, when="has_summary"),
             ),
             Cancel(BACK),
             state=SummarySG.main,
@@ -211,7 +206,7 @@ def summary_dialog() -> Dialog:
         ),
         Window(
             Const(
-                "✍️ <b>Write the summary</b>\n\nSend it as a message or as a <b>.md / .txt</b> file "
+                "<b>Write the summary</b>\n\nSend it as a message or as a <b>.md / .txt</b> file "
                 "(for long notes). Markdown is supported:\n"
                 "<blockquote expandable>## Heading\n- bullet, 1. numbered\n**bold**, *italic*, "
                 "==highlight==\n| Term | Meaning |\n|---|---|\n| GDP | Gross domestic product |\n"
@@ -223,9 +218,9 @@ def summary_dialog() -> Dialog:
             state=SummarySG.input,
         ),
         Window(
-            Const("🗑 Delete this summary for everyone?"),
+            Const("Delete this summary for everyone?"),
             Row(
-                Button(Const("🗑 Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
+                Button(Const("Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
                 SwitchTo(CANCEL, id="cancel", state=SummarySG.main),
             ),
             state=SummarySG.delete,

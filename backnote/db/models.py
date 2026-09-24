@@ -98,7 +98,6 @@ class User(Base):
     full_name: Mapped[str | None] = mapped_column(String(256))
     status: Mapped[str] = mapped_column(String(16), default=UserStatus.PENDING)
     notify_new_content: Mapped[bool] = mapped_column(Boolean, default=True)
-    notify_deadlines: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     last_seen_at: Mapped[datetime | None]
 
@@ -155,25 +154,8 @@ class Lesson(Base):
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
 
 
-class Assignment(Base):
-    __tablename__ = "assignments"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    subject_id: Mapped[int] = mapped_column(
-        ForeignKey("subjects.id", ondelete="CASCADE"), index=True
-    )
-    lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id", ondelete="SET NULL"))
-    title: Mapped[str] = mapped_column(String(256))
-    description: Mapped[str | None] = mapped_column(Text)
-    url: Mapped[str | None] = mapped_column(String(1024))
-    due_at: Mapped[datetime | None] = mapped_column(index=True)
-    created_by: Mapped[int | None] = mapped_column(BigInteger, _user_fk())
-    created_at: Mapped[datetime] = mapped_column(default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
-
-
 class Material(Base):
-    """A link or Telegram file attached to a subject, a lesson or an assignment."""
+    """A link or Telegram file attached to a subject or a lesson."""
 
     __tablename__ = "materials"
 
@@ -183,9 +165,6 @@ class Material(Base):
     )
     lesson_id: Mapped[int | None] = mapped_column(
         ForeignKey("lessons.id", ondelete="CASCADE"), index=True
-    )
-    assignment_id: Mapped[int | None] = mapped_column(
-        ForeignKey("assignments.id", ondelete="CASCADE"), index=True
     )
     kind: Mapped[str] = mapped_column(String(16))
     title: Mapped[str] = mapped_column(String(256))
@@ -207,18 +186,6 @@ class LessonProgress(Base):
     completed_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
-class AssignmentProgress(Base):
-    __tablename__ = "assignment_progress"
-
-    user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    assignment_id: Mapped[int] = mapped_column(
-        ForeignKey("assignments.id", ondelete="CASCADE"), primary_key=True
-    )
-    done_at: Mapped[datetime] = mapped_column(default=utcnow)
-
-
 class LessonNote(Base):
     """Private per-user note for a lesson."""
 
@@ -232,16 +199,3 @@ class LessonNote(Base):
     )
     text: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
-
-
-class ReminderLog(Base):
-    __tablename__ = "reminder_log"
-
-    user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    assignment_id: Mapped[int] = mapped_column(
-        ForeignKey("assignments.id", ondelete="CASCADE"), primary_key=True
-    )
-    kind: Mapped[str] = mapped_column(String(16), primary_key=True)
-    sent_at: Mapped[datetime] = mapped_column(default=utcnow)

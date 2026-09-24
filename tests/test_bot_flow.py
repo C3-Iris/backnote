@@ -1,6 +1,5 @@
 """End-to-end dialog flows using aiogram-dialog's offline test tools."""
 
-import re
 from typing import Any
 
 import pytest
@@ -103,7 +102,7 @@ async def test_full_study_flow(env, svc):
 
     await click(admin, mm, "Read")
     rich = [c for c in bot.calls if type(c).__name__ == "SendRichMessage"]
-    assert rich and "# 🎓 Lecture 1" in rich[-1].rich_message.markdown
+    assert rich and "# Lecture 1" in rich[-1].rich_message.markdown
     assert "$P = a - bQ$" in rich[-1].rich_message.markdown
 
     await click(admin, mm, "Back")
@@ -115,7 +114,9 @@ async def test_full_study_flow(env, svc):
     assert lessons[0][0].video_url == "https://youtu.be/dQw4w9WgXcQ"
 
 
-async def test_assignment_without_deadline_and_broadcast(env, svc):
+async def test_course_and_new_lesson_notification(env, svc):
+    import asyncio
+
     _, bot, mm, admin = env
     await svc.users.allow(3000)
     await admin.send("/start")
@@ -126,21 +127,17 @@ async def test_assignment_without_deadline_and_broadcast(env, svc):
     text = await click(admin, mm, "Skip & create")
     assert "Machine Learning" in text
 
-    await click(admin, mm, r"Assignments \(0\)")
-    await click(admin, mm, "Add assignment")
-    await admin.send("Quiz 1")
-    await click(admin, mm, "No deadline")
-    await admin.send("Answer 10 questions")
-    text = mm.last_message().text
-    assert "Quiz 1" in text and "No deadline" in text
-
-    text = await click(admin, mm, "Mark as done")
-    assert "✅ <b>Done</b>" in text
-
-    import asyncio
+    await click(admin, mm, r"Lessons \(0\)")
+    await click(admin, mm, "Add lesson")
+    await click(admin, mm, "^Video$")
+    await click(admin, mm, "Video 1")
+    await admin.send("Gradient descent")
+    await click(admin, mm, "No recording")
+    assert "Video 1 · Gradient descent" in mm.last_message().text
 
     await asyncio.sleep(0.2)  # let the background broadcast run
-    assert any("New assignment" in t for t in bot.texts())
+    notes = [c for c in bot.calls if getattr(c, "chat_id", None) == 3000]
+    assert notes and "New video" in notes[-1].text
 
 
 async def test_deep_link_opens_lesson(env, svc):
@@ -200,9 +197,10 @@ async def test_ui_tour(env, svc):
     await click(admin, mm, "Back")
     assert "Your progress" in await click(admin, mm, "Progress")
     await click(admin, mm, "Back")
-    assert "open deadlines" in await click(admin, mm, "Deadlines")
-    await click(admin, mm, "Back")
     assert "How Backnote works" in await click(admin, mm, "Help")
+    await click(admin, mm, "Show Markdown example")
+    rich = [c for c in bot.calls if type(c).__name__ == "SendRichMessage"]
+    assert "| Model | Parallel | Long context |" in rich[-1].rich_message.markdown
     await click(admin, mm, "Back")
 
     # Search -> lesson.
@@ -224,7 +222,7 @@ async def test_ui_tour(env, svc):
     assert any("whole number" in t for t in bot.texts())
     await admin.send("2")
     text = await click(admin, mm, "Back")
-    assert "Seminar 2 · Limits and continuity" in text and "📅" in text
+    assert "Seminar 2 · Limits and continuity" in text and "Calculus · " in text
 
     # Materials: a file and a link.
     await click(admin, mm, r"Materials \(0\)")
@@ -264,26 +262,6 @@ async def test_ui_tour(env, svc):
     await click(admin, mm, "Done")
     text = await click(admin, mm, "Archive")
     assert "archived" in text and "5 ECTS" in text and "Year 2 · Term 1" in text
-
-    # Assignment with a calendar deadline.
-    await click(admin, mm, r"Assignments \(0\)")
-    await click(admin, mm, "Add assignment")
-    await admin.send("Homework 3")
-    await click(admin, mm, "No deadline")
-    await click(admin, mm, "Skip & create")
-    await click(admin, mm, "Edit")
-    await click(admin, mm, "Deadline")
-    day_buttons = [
-        b
-        for row in mm.last_message().reply_markup.inline_keyboard
-        for b in row
-        if b.callback_data and b.text.strip().isdigit()
-    ]
-    await admin.click(mm.last_message(), InlineButtonTextLocator(re.escape(day_buttons[-1].text)))
-    await admin.send("18:30")
-    text = mm.last_message().text
-    assert "Due <b>" in text and "18:30" in text
-    assert (await svc.assignments.upcoming(ADMIN_ID)) == []  # the subject is archived
 
     # Admin panel.
     await admin.send("/start")

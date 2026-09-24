@@ -35,8 +35,7 @@ A Markdown table | Time | Topic | with 5-12 rows using mm:ss or h:mm:ss timestam
 
 Keep established technical terms, code, commands and library names in English
 (add the translation in parentheses on first use where helpful). Put code in fenced blocks.
-Keep it factual, skip small talk and organisational announcements unless they concern
-deadlines or exams (put those in a final "## 📣 Announcements" section)."""
+Keep it factual and skip small talk and organisational announcements."""
 
 
 class SummaryError(RuntimeError):

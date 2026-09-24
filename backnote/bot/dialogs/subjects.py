@@ -30,7 +30,6 @@ from backnote.bot.dialogs.common import (
     uid,
 )
 from backnote.bot.dialogs.states import (
-    AssignmentsSG,
     LessonsSG,
     MaterialsSG,
     SubjectCreateSG,
@@ -53,17 +52,17 @@ TERMS = [1, 2, 3]
 SUBJECT_FIELDS = {
     f.key: f
     for f in [
-        Field("title", "📝 Title", "Send the new title.", optional=False),
-        Field("code", "🏷 Code", "Course code from the syllabus, e.g. ECON 101.", max_len=32),
-        Field("instructor", "👤 Instructor", "Who teaches it?"),
-        Field("description", "📄 Description", "What is it about? Grading, rules…", "longtext"),
-        Field("ects", "🏅 ECTS", "Number of ECTS credits.", "int", min_value=0, max_value=60),
-        Field("url", "🔗 Link", "Course page, LMS or syllabus link.", "url"),
+        Field("title", "Title", "Send the new title.", optional=False),
+        Field("code", "Code", "Course code from the syllabus, e.g. ECON 101.", max_len=32),
+        Field("instructor", "Instructor", "Who teaches it?"),
+        Field("description", "Description", "What is it about? Grading, rules…", "longtext"),
+        Field("ects", "ECTS", "Number of ECTS credits.", "int", min_value=0, max_value=60),
+        Field("url", "Link", "Course page, LMS or syllabus link.", "url"),
     ]
 }
 COURSE_FIELDS = {
     **SUBJECT_FIELDS,
-    "provider": Field("provider", "🏫 Provider", "Coursera, edX, Udemy, company name…"),
+    "provider": Field("provider", "Provider", "Coursera, edX, Udemy, company name…"),
 }
 
 
@@ -90,9 +89,9 @@ async def list_getter(dialog_manager: DialogManager, **_):
         if kind == SubjectKind.SUBJECT
         else "Online courses and extra learning tracks — Coursera, edX, bootcamps…"
     )
-    title = f"{meta.emoji} <b>{'Archived ' if archived else ''}{meta.short}</b>"
+    title = f"<b>{'Archived ' if archived else ''}{meta.short}</b>"
     if rows:
-        body = f"<i>{intro}</i>\n\n<i>Buttons show your progress: done/total lessons.</i>"
+        body = f"<i>{intro} Buttons show your progress: done/total lessons.</i>"
     else:
         body = (
             "<blockquote>The archive is empty.</blockquote>"
@@ -104,8 +103,8 @@ async def list_getter(dialog_manager: DialogManager, **_):
         "items": [
             {"id": r.subject.id, "label": subject_button(r.subject, r.total, r.done)} for r in rows
         ],
-        "add_label": f"➕ Add {meta.label.lower()}",
-        "archive_label": "📂 Show active" if archived else "🗄 Archive",
+        "add_label": f"Add {meta.label.lower()}",
+        "archive_label": "Show active" if archived else "Archive",
     }
 
 
@@ -138,21 +137,18 @@ async def view_getter(dialog_manager: DialogManager, **_):
         return {"text": "This item was deleted.", "missing": True}
     lessons = await s.lessons.list_with_progress(subject.id, user_id)
     done = sum(r.done for r in lessons)
-    open_assignments = await s.assignments.open_count(subject.id, user_id)
-    total_assignments = len(await s.assignments.list_for_subject(subject.id, user_id))
     materials = len(await s.materials.list_for(subject_id=subject.id))
 
-    meta = SUBJECT_KINDS[subject.kind]
-    head = f"{meta.emoji} <b>{h(subject.title)}</b>"
+    head = f"<b>{h(subject.title)}</b>"
     if subject.code:
         head += f"  <code>{h(subject.code)}</code>"
     facts = [
-        f"👤 {h(subject.instructor)}" if subject.instructor else None,
-        f"🏫 {h(subject.provider)}" if subject.provider else None,
-        f"🗓 {term_label(subject.year, subject.term)}"
+        f"{h(subject.instructor)}" if subject.instructor else None,
+        f"{h(subject.provider)}" if subject.provider else None,
+        f"{term_label(subject.year, subject.term)}"
         if term_label(subject.year, subject.term)
         else None,
-        f"🏅 {subject.ects} ECTS" if subject.ects is not None else None,
+        f"{subject.ects} ECTS" if subject.ects is not None else None,
     ]
     lines = [head]
     if any(facts):
@@ -160,16 +156,13 @@ async def view_getter(dialog_manager: DialogManager, **_):
     if subject.description:
         lines.append(quote(subject.description))
     lines.append(f"\n<b>Your progress</b>\n<code>{progress_line(done, len(lessons))}</code>")
-    if open_assignments:
-        lines.append(f"📝 {open_assignments} open assignment(s)")
     if subject.is_archived:
-        lines.append("\n🗄 <i>This item is archived.</i>")
+        lines.append("\n<i>This item is archived.</i>")
     return {
         "text": "\n".join(lines),
         "missing": False,
-        "lessons_label": f"🎓 Lessons ({len(lessons)})",
-        "assignments_label": f"📝 Assignments ({total_assignments})",
-        "materials_label": f"📎 Materials ({materials})",
+        "lessons_label": f"Lessons ({len(lessons)})",
+        "materials_label": f"Materials ({materials})",
         "url": subject.url,
         "is_course": subject.kind == SubjectKind.COURSE,
     }
@@ -190,10 +183,10 @@ async def edit_getter(dialog_manager: DialogManager, **_):
     subject = await svc(dialog_manager).subjects.get(data_id(dialog_manager, "subject_id"))
     kind = kind_of(dialog_manager)
     return {
-        "text": f"✏️ <b>Edit</b> · {h(subject.title)}\n\n<i>What do you want to change?</i>",
+        "text": f"<b>Edit</b> · {h(subject.title)}\n\n<i>What do you want to change?</i>",
         "is_course": kind == SubjectKind.COURSE,
         "is_subject": kind == SubjectKind.SUBJECT,
-        "archive_label": "📂 Unarchive" if subject.is_archived else "🗄 Archive",
+        "archive_label": "Unarchive" if subject.is_archived else "Archive",
         "can_delete": can_delete(dialog_manager, subject.created_by),
     }
 
@@ -241,10 +234,10 @@ async def delete_getter(dialog_manager: DialogManager, **_):
     lessons = await s.lessons.list_with_progress(subject.id, uid(dialog_manager))
     return {
         "text": (
-            f"🗑 Delete <b>{h(subject.title)}</b>?\n\n"
+            f"Delete <b>{h(subject.title)}</b>?\n\n"
             f"<blockquote>This removes {len(lessons)} lessons with all their materials, "
-            "assignments, summaries and everyone's progress. It cannot be undone.\n"
-            "Tip: use 🗄 Archive to just hide it.</blockquote>"
+            "summaries and everyone's progress. It cannot be undone.\n"
+            "Tip: use Archive to just hide it.</blockquote>"
         )
     }
 
@@ -319,20 +312,13 @@ def subjects_dialog() -> Dialog:
                     on_click=_starter(LessonsSG.list, "lessons"),
                     style=PRIMARY,
                 ),
-                Row(
-                    Button(
-                        Format("{assignments_label}"),
-                        id="assignments",
-                        on_click=_starter(AssignmentsSG.list, "assignments"),
-                    ),
-                    Button(
-                        Format("{materials_label}"),
-                        id="materials",
-                        on_click=_starter(MaterialsSG.list, "materials"),
-                    ),
+                Button(
+                    Format("{materials_label}"),
+                    id="materials",
+                    on_click=_starter(MaterialsSG.list, "materials"),
                 ),
-                Url(Const("🔗 Open course page"), Format("{url}"), when="url"),
-                SwitchTo(Const("✏️ Edit"), id="edit", state=SubjectsSG.edit),
+                Url(Const("Open course page"), Format("{url}"), when="url"),
+                SwitchTo(Const("Edit"), id="edit", state=SubjectsSG.edit),
                 when=lambda data, *_: not data["missing"],
             ),
             SwitchTo(BACK, id="back", state=SubjectsSG.list),
@@ -346,12 +332,12 @@ def subjects_dialog() -> Dialog:
                 {"provider": COURSE_FIELDS["provider"]}, SubjectsSG.edit_field, when="is_course"
             ),
             SwitchTo(
-                Const("🗓 Year & term"), id="term", state=SubjectsSG.edit_term, when="is_subject"
+                Const("Year & term"), id="term", state=SubjectsSG.edit_term, when="is_subject"
             ),
             Row(
                 Button(Format("{archive_label}"), id="archive", on_click=toggle_archive),
                 SwitchTo(
-                    Const("🗑 Delete"),
+                    Const("Delete"),
                     id="delete",
                     state=SubjectsSG.delete,
                     when="can_delete",
@@ -367,13 +353,13 @@ def subjects_dialog() -> Dialog:
         ),
         Window(
             Format(
-                "🗓 <b>Year & term</b>\n\nCurrent: <b>{current}</b>\n\n"
+                "<b>Year & term</b>\n\nCurrent: <b>{current}</b>\n\n"
                 "<i>The academic year is split into 3 terms.</i>"
             ),
             *_year_term_selects(on_year, on_term),
             Row(
-                Button(Const("🧹 Clear"), id="clear", on_click=clear_term),
-                SwitchTo(Const("✅ Done"), id="done", state=SubjectsSG.edit),
+                Button(Const("Clear"), id="clear", on_click=clear_term),
+                SwitchTo(Const("Done"), id="done", state=SubjectsSG.edit),
             ),
             state=SubjectsSG.edit_term,
             getter=term_getter,
@@ -381,7 +367,7 @@ def subjects_dialog() -> Dialog:
         Window(
             Format("{text}"),
             Row(
-                Button(Const("🗑 Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
+                Button(Const("Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
                 SwitchTo(CANCEL, id="cancel", state=SubjectsSG.edit),
             ),
             state=SubjectsSG.delete,
@@ -470,7 +456,7 @@ async def create_title_getter(dialog_manager: DialogManager, **_):
 def subject_create_dialog() -> Dialog:
     return Dialog(
         Window(
-            Format("➕ <b>New {label}</b>\n\nSend the title.\n<i>Example: {example}</i>"),
+            Format("<b>New {label}</b>\n\nSend the title.\n<i>Example: {example}</i>"),
             MessageInput(create_title, content_types=["text"]),
             Cancel(CANCEL),
             state=SubjectCreateSG.title,
@@ -478,32 +464,32 @@ def subject_create_dialog() -> Dialog:
         ),
         Window(
             Format(
-                "🗓 <b>{title}</b>\n\nWhen is it taught? Pick the study year and term.\n"
+                "<b>{title}</b>\n\nWhen is it taught? Pick the study year and term.\n"
                 "Selected: <b>{current}</b>"
             ),
             *_year_term_selects(create_year, create_term),
             Row(
-                SwitchTo(Const("➡️ Next"), id="next", state=SubjectCreateSG.description),
-                SwitchTo(Const("⏭ Skip"), id="skip", state=SubjectCreateSG.description),
+                SwitchTo(Const("Next"), id="next", state=SubjectCreateSG.description),
+                SwitchTo(Const("Skip"), id="skip", state=SubjectCreateSG.description),
             ),
             Cancel(CANCEL),
             state=SubjectCreateSG.term,
             getter=create_term_getter,
         ),
         Window(
-            Const("🔗 Send the course link (Coursera, edX, …) or skip."),
+            Const("Send the course link (Coursera, edX, …) or skip."),
             MessageInput(create_link, content_types=["text"]),
-            SwitchTo(Const("⏭ Skip"), id="skip", state=SubjectCreateSG.description),
+            SwitchTo(Const("Skip"), id="skip", state=SubjectCreateSG.description),
             Cancel(CANCEL),
             state=SubjectCreateSG.link,
         ),
         Window(
             Const(
-                "📄 Add a short description: what it's about, grading, useful info.\n"
+                "Add a short description: what it's about, grading, useful info.\n"
                 "<i>You can edit everything later.</i>"
             ),
             MessageInput(create_description, content_types=["text"]),
-            Button(Const("⏭ Skip & create"), id="skip", on_click=skip_description, style=PRIMARY),
+            Button(Const("Skip & create"), id="skip", on_click=skip_description, style=PRIMARY),
             Cancel(CANCEL),
             state=SubjectCreateSG.description,
         ),

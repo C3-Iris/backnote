@@ -3,35 +3,33 @@
 A private Telegram study base for university subjects, lectures and online courses.
 Built with [aiogram 3](https://docs.aiogram.dev) and [aiogram-dialog 2](https://aiogram-dialog.readthedocs.io).
 
-Friends add lectures, materials and assignments; everyone studies from the same base while
-keeping personal progress, notes and deadline status.
+Friends add lectures and materials; everyone studies from the same base while keeping
+personal progress and notes. No grades, deadlines or teachers — just a place to learn.
 
 ## Features
 
 - **Whitelist access** — one admin (from `ADMIN_ID`) and a list of members. Strangers who press
   `/start` send an access request that the admin approves with one tap.
-- **📘 Subjects** — university subjects (Software Engineering programme) tagged with study
+- **Subjects** — university subjects (Software Engineering programme) tagged with study
   *year* and *term* (3 terms a year); the list shows the newest term first.
   Code, instructor, ECTS, description, link; archive old terms instead of deleting them.
-- **🎯 Courses** — online courses and extra tracks (AI, agents, Coursera/edX, bootcamps…)
+- **Courses** — online courses and extra tracks (AI, agents, Coursera/edX, bootcamps…)
   with provider and link. Same structure as subjects.
-- **🎓 Lessons** — lecture / seminar / practice / lab / video / reading, auto-numbered per type.
+- **Lessons** — lecture / seminar / practice / lab / video / reading, auto-numbered per type.
   YouTube recordings show a large preview right in the chat. Prev/next navigation and a
   shareable deep link (`t.me/<bot>?start=l42`).
-- **✅ Personal progress** — each member marks lessons as completed independently; progress
+- **Personal progress** — each member marks lessons as completed independently; progress
   bars per subject, overall stats and a *Continue* button for the next unfinished lesson.
-- **🗒 Private notes** per lesson.
-- **📎 Materials** — files (PDF, slides, photos, video, audio) or links attached to a subject,
-  a lesson or an assignment. Forward several files at once.
-- **📝 Assignments** — deadlines with a calendar picker, personal done status, a global
-  *Deadlines* screen and automatic reminders before the due time.
-- **🧠 Summaries** — shown as Telegram **Rich Messages** (Bot API 10.1+): headings, tables,
+- **Private notes** per lesson.
+- **Materials** — files (PDF, slides, photos, video, audio) or links attached to a subject
+  or a lesson. Forward several files at once.
+- **Summaries** — shown as Telegram **Rich Messages** (Bot API 10.1+): headings, tables,
   task lists, LaTeX formulas, collapsible answers. Write them yourself (text or `.md` file) or
   generate them with **Gemini** for free from a public YouTube recording.
-- **🔔 Notifications** — members get a message when a new lesson or assignment is added
+- **Notifications** — members get a message when a new lesson is added
   (can be turned off in Settings).
-- **🔎 Search** across subjects, lesson titles, descriptions and summaries.
-- **🛡 Admin panel** — members, requests, add by ID/contact/forward, block/remove, broadcast.
+- **Search** across subjects, lesson titles, descriptions and summaries.
+- **Admin panel** — members, requests, add by ID/contact/forward, block/remove, broadcast.
 
 ## Quick start
 
@@ -56,8 +54,7 @@ The SQLite database lives in `./data/backnote.db`.
 | `BOT_TOKEN` | — | Token from @BotFather |
 | `ADMIN_ID` | — | Your Telegram user id (the bot answers `/id`) |
 | `DATABASE_URL` | `sqlite+aiosqlite:///data/backnote.db` | SQLAlchemy async URL |
-| `TIMEZONE` | `Europe/Kyiv` | Used for deadlines and dates |
-| `REMINDER_HOURS` | `24` | How long before a deadline to remind |
+| `TIMEZONE` | `Europe/Kyiv` | Used for dates |
 | `GEMINI_API_KEY` | — | Enables AI summaries ([get a free key](https://aistudio.google.com/apikey)) |
 | `GEMINI_MODEL` | `gemini-flash-latest` | Any Gemini model that supports video |
 | `SUMMARY_LANGUAGE` | `Ukrainian` | Language of AI summaries |
@@ -83,7 +80,7 @@ Project layout:
 
 ```
 backnote/
-  __main__.py        entry point (migrations, bot, reminders loop)
+  __main__.py        entry point (migrations, then the bot)
   config.py          settings from environment / .env
   db/                SQLAlchemy models, engine, migration runner
   migrations/        Alembic migrations
@@ -94,13 +91,13 @@ backnote/
     dialogs/         aiogram-dialog windows (menu, subjects, lessons, …)
     handlers.py      commands, deep links, notification buttons
     middlewares.py   whitelist gate
-    notifier.py      broadcasts; reminders.py — deadline reminders
+    notifier.py      new-lesson notifications
 tests/
 ```
 
 ## Ideas for later
 
-- Telegram Mini App with a richer UI and a calendar view of deadlines.
+- Telegram Mini App with a richer UI.
 - Quizzes / flashcards generated from summaries, spaced repetition.
 - AI summaries for PDFs and slides, not only videos.
 - Grade tracker per subject, exam schedule.

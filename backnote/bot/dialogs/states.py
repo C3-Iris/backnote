@@ -3,7 +3,6 @@ from aiogram.fsm.state import State, StatesGroup
 
 class MainSG(StatesGroup):
     menu = State()
-    deadlines = State()
     progress = State()
     settings = State()
     help = State()
@@ -60,23 +59,6 @@ class MaterialsSG(StatesGroup):
     view = State()
     rename = State()
     delete = State()
-
-
-class AssignmentsSG(StatesGroup):
-    list = State()
-    view = State()
-    edit = State()
-    edit_field = State()
-    due_date = State()
-    due_time = State()
-    delete = State()
-
-
-class AssignmentCreateSG(StatesGroup):
-    title = State()
-    due_date = State()
-    due_time = State()
-    description = State()
 
 
 class AdminSG(StatesGroup):

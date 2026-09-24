@@ -1,5 +1,3 @@
-from datetime import UTC, datetime, timedelta
-
 import pytest
 from aiogram.types import User as TgUser
 
@@ -91,37 +89,6 @@ async def test_materials_are_scoped_to_target(svc):
     assert [
         m.title for m in await svc.materials.list_for(subject_id=subject.id, lesson_id=lesson.id)
     ] == ["slides"]
-
-
-async def test_deadlines_and_reminders(svc):
-    await make_members(svc)
-    now = datetime.now(UTC)
-    subject = await svc.subjects.create(kind=SubjectKind.SUBJECT, title="S", created_by=FRIEND)
-    soon = await svc.assignments.create(
-        subject_id=subject.id, title="PS1", created_by=FRIEND, due_at=now + timedelta(hours=5)
-    )
-    later = await svc.assignments.create(
-        subject_id=subject.id, title="PS2", created_by=FRIEND, due_at=now + timedelta(days=5)
-    )
-    await svc.assignments.create(subject_id=subject.id, title="Reading", created_by=FRIEND)
-
-    upcoming = await svc.assignments.upcoming(ADMIN_ID)
-    assert [r.assignment.id for r in upcoming] == [soon.id, later.id]
-
-    assert await svc.assignments.toggle_done(soon.id, FRIEND) is True
-    due = await svc.assignments.due_reminders(horizon=timedelta(hours=24), kind="24h")
-    assert [(u, a.id) for u, a, _ in due] == [(ADMIN_ID, soon.id)]
-
-    await svc.assignments.log_reminder(ADMIN_ID, soon.id, "24h")
-    assert await svc.assignments.due_reminders(horizon=timedelta(hours=24), kind="24h") == []
-
-    # Moving the deadline re-arms the reminder.
-    await svc.assignments.update(soon.id, due_at=now + timedelta(hours=6))
-    due = await svc.assignments.due_reminders(horizon=timedelta(hours=24), kind="24h")
-    assert [(u, a.id) for u, a, _ in due] == [(ADMIN_ID, soon.id)]
-
-    await svc.users.update_settings(ADMIN_ID, notify_deadlines=False)
-    assert await svc.assignments.due_reminders(horizon=timedelta(hours=24), kind="24h") == []
 
 
 async def test_search(svc):

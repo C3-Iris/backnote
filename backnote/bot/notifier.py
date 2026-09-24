@@ -9,8 +9,8 @@ from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from backnote.bot.callbacks import OpenCb
-from backnote.db.models import Assignment, Lesson, Subject, User
-from backnote.formatting import fmt_datetime, h, lesson_heading, lesson_kind
+from backnote.db.models import Lesson, Subject, User
+from backnote.formatting import h, lesson_heading, lesson_kind
 from backnote.services import Services
 
 log = logging.getLogger(__name__)
@@ -58,24 +58,11 @@ class Notifier:
         by = f"\n<i>added by {h(author.display_name)}</i>" if author else ""
         text = (
             f"🆕 <b>New {lesson_kind(lesson.kind).label.lower()}</b> in {h(subject.title)}\n"
-            f"<blockquote>{lesson_kind(lesson.kind).emoji} {h(lesson_heading(lesson))}"
+            f"<blockquote>{h(lesson_heading(lesson))}"
             f"</blockquote>{by}"
         )
         self._spawn(
             self._broadcast(lesson.created_by or 0, text, open_kb("lesson", lesson.id, "▶️ Open"))
-        )
-
-    def new_assignment(self, assignment: Assignment, subject: Subject, author: User | None) -> None:
-        due = f"\n⏰ Due {fmt_datetime(assignment.due_at, self._tz)}" if assignment.due_at else ""
-        by = f"\n<i>added by {h(author.display_name)}</i>" if author else ""
-        text = (
-            f"📝 <b>New assignment</b> in {h(subject.title)}\n"
-            f"<blockquote>{h(assignment.title)}{due}</blockquote>{by}"
-        )
-        self._spawn(
-            self._broadcast(
-                assignment.created_by or 0, text, open_kb("assignment", assignment.id, "📝 Open")
-            )
         )
 
     def run(self, coro) -> None:

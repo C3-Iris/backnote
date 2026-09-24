@@ -12,7 +12,6 @@ class Settings(BaseSettings):
     admin_id: int
     database_url: str = "sqlite+aiosqlite:///data/backnote.db"
     timezone: str = "Europe/Kyiv"
-    reminder_hours: int = 24
 
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-flash-latest"

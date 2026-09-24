@@ -1,7 +1,6 @@
 from aiogram_dialog import Dialog
 
 from backnote.bot.dialogs.admin import admin_dialog
-from backnote.bot.dialogs.assignments import assignment_create_dialog, assignments_dialog
 from backnote.bot.dialogs.lessons import lesson_create_dialog, lessons_dialog
 from backnote.bot.dialogs.main_menu import main_dialog
 from backnote.bot.dialogs.materials import materials_dialog
@@ -20,7 +19,5 @@ def all_dialogs() -> list[Dialog]:
         lesson_create_dialog(),
         summary_dialog(),
         materials_dialog(),
-        assignments_dialog(),
-        assignment_create_dialog(),
         admin_dialog(),
     ]

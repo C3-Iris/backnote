@@ -7,7 +7,7 @@ from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
 
 from backnote.bot.callbacks import AccessCb, OpenCb
-from backnote.bot.dialogs.states import AssignmentsSG, LessonsSG, MainSG
+from backnote.bot.dialogs.states import LessonsSG, MainSG
 from backnote.bot.dialogs.summary import send_summary
 from backnote.config import Settings
 from backnote.db.models import UserStatus
@@ -18,13 +18,10 @@ log = logging.getLogger(__name__)
 
 
 async def open_target(manager: DialogManager, svc: Services, target: str, obj_id: int) -> bool:
-    """Open a lesson/assignment on top of a fresh main menu, so Back leads somewhere useful."""
+    """Open a lesson on top of a fresh main menu, so Back leads somewhere useful."""
     if target == "lesson":
         obj = await svc.lessons.get(obj_id)
         state, data = LessonsSG.view, {"lesson_id": obj_id}
-    elif target == "assignment":
-        obj = await svc.assignments.get(obj_id)
-        state, data = AssignmentsSG.view, {"assignment_id": obj_id}
     else:
         return False
     if obj is None:
@@ -35,7 +32,7 @@ async def open_target(manager: DialogManager, svc: Services, target: str, obj_id
     return True
 
 
-DEEP_LINK_PREFIXES = {"l": "lesson", "a": "assignment"}
+DEEP_LINK_PREFIXES = {"l": "lesson"}
 
 
 async def cmd_start(
@@ -46,7 +43,7 @@ async def cmd_start(
         target = DEEP_LINK_PREFIXES[payload[0]]
         if await open_target(dialog_manager, svc, target, int(payload[1:])):
             return
-        await message.answer("🤷 That item no longer exists.")
+        await message.answer("That item no longer exists.")
     await dialog_manager.start(MainSG.menu, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND)
 
 
@@ -87,17 +84,17 @@ async def on_access_decision(
         return
     if callback_data.action == "allow":
         user = await svc.users.allow(callback_data.user_id)
-        verdict = "✅ Allowed"
+        verdict = "Allowed"
         try:
             await callback.bot.send_message(
                 user.id,
-                "✅ <b>You now have access to Backnote.</b>\nPress /start to open the menu.",
+                "<b>You now have access to Backnote.</b>\nPress /start to open the menu.",
             )
         except Exception:
             log.info("Could not notify %s about access", user.id)
     else:
         user = await svc.users.set_status(callback_data.user_id, UserStatus.BLOCKED)
-        verdict = "⛔ Blocked"
+        verdict = "Blocked"
     name = h(user.display_name) if user else callback_data.user_id
     await callback.message.edit_text(f"{callback.message.html_text}\n\n<b>{verdict}</b>: {name}")
     await callback.answer()

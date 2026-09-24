@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.text import Const, Format
 
 from backnote.bot.dialogs.common import BACK, svc
 from backnote.bot.dialogs.states import LessonsSG, SearchSG, SubjectsSG
-from backnote.formatting import SUBJECT_KINDS, h, lesson_code, lesson_kind
+from backnote.formatting import SUBJECT_KINDS, h, lesson_code
 
 
 async def on_query(message: Message, _w, manager: DialogManager) -> None:
@@ -26,25 +26,24 @@ async def results_getter(dialog_manager: DialogManager, **_):
     items = [
         {
             "id": f"s:{subj.kind}:{subj.id}",
-            "label": f"{SUBJECT_KINDS[subj.kind].emoji} {subj.title}",
+            "label": f"{SUBJECT_KINDS[subj.kind].label}: {subj.title}",
         }
         for subj in subjects
     ] + [
         {
             "id": f"l:{subj.id}:{lesson.id}",
-            "label": f"{lesson_kind(lesson.kind).emoji} {lesson_code(lesson)} · {lesson.title}"
-            f" — {subj.title}",
+            "label": f"{lesson_code(lesson)} · {lesson.title} — {subj.title}",
         }
         for lesson, subj in lessons
     ]
     if items:
         text = (
-            f"🔎 Results for <b>“{h(query)}”</b>\n"
+            f"Results for <b>“{h(query)}”</b>\n"
             f"<blockquote>{len(subjects)} subjects/courses · {len(lessons)} lessons</blockquote>\n"
             "<i>Lessons are matched by title, description and summary.</i>"
         )
     else:
-        text = f"🔎 Nothing found for <b>“{h(query)}”</b>. Try another word."
+        text = f"Nothing found for <b>“{h(query)}”</b>. Try another word."
     return {"text": text, "items": items}
 
 
@@ -60,7 +59,7 @@ def search_dialog() -> Dialog:
     return Dialog(
         Window(
             Const(
-                "🔎 <b>Search</b>\n\nSend a word or phrase — I'll look through subjects, courses, "
+                "<b>Search</b>\n\nSend a word or phrase — I'll look through subjects, courses, "
                 "lesson titles, descriptions and summaries."
             ),
             MessageInput(on_query, content_types=["text"]),
@@ -83,7 +82,7 @@ def search_dialog() -> Dialog:
                 hide_on_single_page=True,
             ),
             MessageInput(on_query, content_types=["text"]),
-            SwitchTo(Const("🔁 New search"), id="again", state=SearchSG.query),
+            SwitchTo(Const("New search"), id="again", state=SearchSG.query),
             Cancel(BACK),
             state=SearchSG.results,
             getter=results_getter,

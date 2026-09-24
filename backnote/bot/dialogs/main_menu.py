@@ -1,61 +1,37 @@
 from aiogram.types import CallbackQuery
 from aiogram_dialog import Dialog, DialogManager, Window
-from aiogram_dialog.widgets.kbd import Button, Column, Row, ScrollingGroup, Select, Start, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Row, Start, SwitchTo
 from aiogram_dialog.widgets.text import Const, Format
 
 from backnote.bot.dialogs.common import BACK, PRIMARY, settings, svc, uid
-from backnote.bot.dialogs.states import (
-    AdminSG,
-    AssignmentsSG,
-    LessonsSG,
-    MainSG,
-    SearchSG,
-    SubjectsSG,
-)
+from backnote.bot.dialogs.states import AdminSG, LessonsSG, MainSG, SearchSG, SubjectsSG
+from backnote.bot.rich import send_markdown
 from backnote.db.models import SubjectKind
-from backnote.formatting import (
-    deadline_badge,
-    fmt_datetime,
-    h,
-    lesson_code,
-    percent,
-    progress_bar,
-    relative,
-)
+from backnote.formatting import h, lesson_code, percent, progress_bar
 
 
 async def menu_getter(dialog_manager: DialogManager, **_):
-    s, user_id, tz = svc(dialog_manager), uid(dialog_manager), settings(dialog_manager).tz
+    s, user_id = svc(dialog_manager), uid(dialog_manager)
     subjects = await s.subjects.count(SubjectKind.SUBJECT)
     courses = await s.subjects.count(SubjectKind.COURSE)
     lessons = await s.lessons.count()
     done = await s.progress.completed_count(user_id)
-    upcoming = await s.assignments.upcoming(user_id, limit=3, overdue_days=3)
     cont = await s.progress.continue_lesson(user_id)
 
     lines = [
-        "📚 <b>Backnote</b> — your shared study base",
-        f"<blockquote>📘 {subjects} subjects · 🎯 {courses} courses · 🎓 {lessons} lessons\n"
-        f"✅ You completed {done} {'lesson' if done == 1 else 'lessons'}</blockquote>",
+        "<b>Backnote</b> — your shared study base",
+        f"<blockquote>{subjects} subjects · {courses} courses · {lessons} lessons\n"
+        f"You completed {done} of them</blockquote>",
     ]
-    if upcoming:
-        lines.append("\n⏰ <b>Coming up</b>")
-        for row in upcoming:
-            due = row.assignment.due_at
-            lines.append(
-                f"{deadline_badge(due)} {h(row.assignment.title)} — <i>{h(row.subject.title)}</i>"
-                f"\n      {fmt_datetime(due, tz)} · {relative(due)}"
-            )
     if cont:
         lesson, subject = cont
-        lines.append(f"\n▶️ <b>Up next:</b> {h(subject.title)} · {h(lesson.title)}")
+        lines.append(f"Up next: <b>{h(subject.title)}</b> — {h(lesson.title)}")
 
     return {
         "text": "\n".join(lines),
         "is_admin": user_id == settings(dialog_manager).admin_id,
         "has_continue": cont is not None,
-        "continue_label": f"▶️ Continue: {lesson_code(cont[0])}" if cont else "",
-        "continue_ids": (cont[1].id, cont[0].id) if cont else None,
+        "continue_label": f"▶ Continue: {lesson_code(cont[0])}" if cont else "",
     }
 
 
@@ -66,58 +42,20 @@ async def on_continue(_c: CallbackQuery, _b, manager: DialogManager) -> None:
         await manager.start(LessonsSG.view, data={"subject_id": subject.id, "lesson_id": lesson.id})
 
 
-async def deadlines_getter(dialog_manager: DialogManager, **_):
-    tz = settings(dialog_manager).tz
-    rows = await svc(dialog_manager).assignments.upcoming(uid(dialog_manager), limit=40)
-    items = [
-        {
-            "id": f"{r.subject.id}:{r.assignment.id}",
-            "label": f"{deadline_badge(r.assignment.due_at)} {r.assignment.title} · "
-            f"{r.assignment.due_at.astimezone(tz):%d %b}",
-        }
-        for r in rows
-    ]
-    if rows:
-        body = "\n".join(
-            f"{deadline_badge(r.assignment.due_at)} <b>{h(r.assignment.title)}</b>\n"
-            f"      <i>{h(r.subject.title)}</i> · {fmt_datetime(r.assignment.due_at, tz)} · "
-            f"{relative(r.assignment.due_at)}"
-            for r in rows[:15]
-        )
-        legend = "<i>🔴 overdue · 🟠 &lt;24h · 🟡 &lt;3 days · 🟢 later</i>"
-        text = f"⏰ <b>Your open deadlines</b>\n\n{body}\n\n{legend}"
-    else:
-        text = (
-            "⏰ <b>Your open deadlines</b>\n\n"
-            "<blockquote>Nothing due. Enjoy the calm 🌿</blockquote>"
-        )
-    return {"text": text, "items": items}
-
-
-async def on_deadline(_c: CallbackQuery, _w, manager: DialogManager, item_id: str) -> None:
-    subject_id, assignment_id = map(int, item_id.split(":"))
-    await manager.start(
-        AssignmentsSG.view, data={"subject_id": subject_id, "assignment_id": assignment_id}
-    )
-
-
 async def progress_getter(dialog_manager: DialogManager, **_):
     rows = await svc(dialog_manager).progress.overview(uid(dialog_manager))
     if not rows:
-        return {"text": "📊 <b>Your progress</b>\n\n<blockquote>No lessons yet.</blockquote>"}
+        return {"text": "<b>Your progress</b>\n\n<blockquote>No lessons yet.</blockquote>"}
     total = sum(r.total for r in rows)
     done = sum(r.done for r in rows)
-    blocks = []
-    for r in rows:
-        emoji = "🎯" if r.subject.kind == SubjectKind.COURSE else "📘"
-        finished = " 🏁" if r.done == r.total else ""
-        blocks.append(
-            f"{emoji} <b>{h(r.subject.title)}</b>{finished}\n"
-            f"<code>{progress_bar(r.done, r.total)}</code> {r.done}/{r.total} · "
-            f"{percent(r.done, r.total)}%"
-        )
+    blocks = [
+        f"<b>{h(r.subject.title)}</b>\n"
+        f"<code>{progress_bar(r.done, r.total)}</code> {r.done}/{r.total} · "
+        f"{percent(r.done, r.total)}%"
+        for r in rows
+    ]
     text = (
-        "📊 <b>Your progress</b>\n"
+        "<b>Your progress</b>\n"
         f"<blockquote>Overall: <b>{done}/{total}</b> lessons · {percent(done, total)}%\n"
         f"<code>{progress_bar(done, total, 16)}</code></blockquote>\n\n" + "\n\n".join(blocks)
     )
@@ -126,47 +64,72 @@ async def progress_getter(dialog_manager: DialogManager, **_):
 
 async def settings_getter(dialog_manager: DialogManager, **_):
     user = await svc(dialog_manager).users.get(uid(dialog_manager))
-
-    def state(flag: bool) -> str:
-        return "🔔 On" if flag else "🔕 Off"
-
-    return {
-        "new_label": f"New lessons & assignments: {state(user.notify_new_content)}",
-        "due_label": f"Deadline reminders: {state(user.notify_deadlines)}",
-        "hours": settings(dialog_manager).reminder_hours,
-    }
+    return {"new_label": f"New lessons: {'on' if user.notify_new_content else 'off'}"}
 
 
-async def toggle_setting(_c: CallbackQuery, button: Button, manager: DialogManager) -> None:
-    field = {"t_new": "notify_new_content", "t_due": "notify_deadlines"}[button.widget_id]
+async def toggle_new_content(_c: CallbackQuery, _b, manager: DialogManager) -> None:
     user = await svc(manager).users.get(uid(manager))
-    await svc(manager).users.update_settings(uid(manager), **{field: not getattr(user, field)})
+    await svc(manager).users.update_settings(
+        uid(manager), notify_new_content=not user.notify_new_content
+    )
 
 
-HELP = """❔ <b>How Backnote works</b>
+# Telegram keeps line breaks from the source, so each paragraph is a single line.
+HELP = "\n\n".join(
+    [
+        "<b>How Backnote works</b>",
+        "<b>Subjects</b> are university courses of your programme, tagged with study year and "
+        "term (3 terms a year). <b>Courses</b> are online courses and extra tracks: AI, agents, "
+        "Coursera, YouTube playlists.",
+        "Inside each one there are <b>lessons</b> (numbered lectures with a recording link, "
+        "materials, a summary and your private note) and <b>materials</b> for the whole subject "
+        "(syllabus, slides, books).",
+        "<b>Personal:</b> completion marks and notes.\n"
+        "<b>Shared:</b> subjects, lessons, materials and summaries.",
+        "<b>Summaries</b> are sent as Telegram rich messages, so full Markdown works: headings, "
+        "tables, lists, formulas, code blocks and collapsible sections. Tap the button below to "
+        "see an example.",
+        "/start — main menu · /id — your Telegram ID",
+    ]
+)
 
-<b>📘 Subjects</b> — university courses of your programme. The year has 3 terms, so every
-subject can be tagged with its <i>year</i> and <i>term</i>.
-<b>🎯 Courses</b> — online courses and extra tracks (Coursera, edX, bootcamps…).
+MARKDOWN_DEMO = r"""# Lecture 3 · Transformers
 
-Inside each one you will find:
-• <b>🎓 Lessons</b> — lectures, seminars, practice sessions, labs. Each has a number, a
-recording link (YouTube previews right in the chat), materials, a summary and your private note.
-• <b>📝 Assignments</b> — homework with deadlines and reminders.
-• <b>📎 Materials</b> — syllabus, slides, books: files or links.
+*Deep Learning* — example summary
 
-<b>Personal, not shared:</b> ✅ completion marks, assignment status and 🗒 notes.
-<b>Shared with everyone:</b> subjects, lessons, materials, assignments and summaries.
+## Key ideas
+- **Self-attention** lets every token look at every other token
+- ==Positional encoding== adds order information
+- Training is parallel, unlike RNNs
 
-<b>🧠 Summaries</b> are shown as Telegram rich messages, so Markdown works:
-<blockquote expandable>## Heading
-**bold**, *italic*, ==highlight==, ||spoiler||
-- bullet lists and 1. numbered lists
-| tables | too |
-$E = mc^2$ inline and $$\\int_0^1 x\\,dx$$ block formulas
-&lt;details&gt;&lt;summary&gt;Answer&lt;/summary&gt;hidden text&lt;/details&gt;</blockquote>
+## Formula
+$$\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
 
-Commands: /start — main menu · /id — your Telegram id"""
+## Comparison
+| Model | Parallel | Long context |
+|:--|:--:|:--:|
+| RNN | no | weak |
+| Transformer | yes | strong |
+
+## Code
+```python
+scores = q @ k.transpose(-2, -1) / d_k ** 0.5
+weights = scores.softmax(dim=-1)
+```
+
+## Self-check
+- [x] What problem does attention solve?
+- [ ] Why divide by $\sqrt{d_k}$?
+
+<details><summary>Answer</summary>Large dot products saturate softmax.</details>
+
+---
+_This is how summaries look. Write yours in the same Markdown._"""
+
+
+async def on_markdown_demo(callback: CallbackQuery, _b, manager: DialogManager) -> None:
+    await send_markdown(callback.bot, callback.message.chat.id, MARKDOWN_DEMO)
+    await callback.answer()
 
 
 def main_dialog() -> Dialog:
@@ -195,38 +158,16 @@ def main_dialog() -> Dialog:
                 ),
             ),
             Row(
-                SwitchTo(Const("⏰ Deadlines"), id="deadlines", state=MainSG.deadlines),
                 Start(Const("🔎 Search"), id="search", state=SearchSG.query),
-            ),
-            Row(
                 SwitchTo(Const("📊 Progress"), id="progress", state=MainSG.progress),
-                SwitchTo(Const("⚙️ Settings"), id="settings", state=MainSG.settings),
             ),
             Row(
-                Start(Const("🛡 Admin"), id="admin", state=AdminSG.menu, when="is_admin"),
-                SwitchTo(Const("❔ Help"), id="help", state=MainSG.help),
+                SwitchTo(Const("Settings"), id="settings", state=MainSG.settings),
+                SwitchTo(Const("Help"), id="help", state=MainSG.help),
+                Start(Const("Admin"), id="admin", state=AdminSG.menu, when="is_admin"),
             ),
             state=MainSG.menu,
             getter=menu_getter,
-        ),
-        Window(
-            Format("{text}"),
-            ScrollingGroup(
-                Select(
-                    Format("{item[label]}"),
-                    id="deadline",
-                    item_id_getter=lambda x: x["id"],
-                    items="items",
-                    on_click=on_deadline,
-                ),
-                id="deadlines_scroll",
-                width=1,
-                height=8,
-                hide_on_single_page=True,
-            ),
-            SwitchTo(BACK, id="back", state=MainSG.menu),
-            state=MainSG.deadlines,
-            getter=deadlines_getter,
         ),
         Window(
             Format("{text}"),
@@ -235,21 +176,18 @@ def main_dialog() -> Dialog:
             getter=progress_getter,
         ),
         Window(
-            Format(
-                "⚙️ <b>Settings</b>\n\n<blockquote>🆕 Get a message when someone adds a lesson "
-                "or an assignment.\n⏰ Get reminded {hours} h before a deadline you haven't "
-                "marked as done.</blockquote>"
+            Const(
+                "<b>Settings</b>\n\n"
+                "<blockquote>Get a message when someone adds a new lesson.</blockquote>"
             ),
-            Column(
-                Button(Format("{new_label}"), id="t_new", on_click=toggle_setting),
-                Button(Format("{due_label}"), id="t_due", on_click=toggle_setting),
-            ),
+            Button(Format("{new_label}"), id="t_new", on_click=toggle_new_content),
             SwitchTo(BACK, id="back", state=MainSG.menu),
             state=MainSG.settings,
             getter=settings_getter,
         ),
         Window(
             Const(HELP),
+            Button(Const("Show Markdown example"), id="md_demo", on_click=on_markdown_demo),
             SwitchTo(BACK, id="back", state=MainSG.menu),
             state=MainSG.help,
         ),

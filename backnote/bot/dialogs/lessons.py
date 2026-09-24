@@ -54,26 +54,24 @@ from backnote.formatting import (
 LESSON_FIELDS = {
     f.key: f
     for f in [
-        Field("title", "📝 Title", "Send the new title.", optional=False),
+        Field("title", "Title", "Send the new title.", optional=False),
         Field(
             "number",
-            "🔢 Number",
+            "Number",
             "Lesson number, e.g. 3.",
             "int",
             False,
             min_value=0,
             max_value=999,
         ),
-        Field(
-            "video_url", "▶️ Recording link", "YouTube or any other link to the recording.", "url"
-        ),
-        Field("description", "📄 Description", "Topics, reading list, remarks…", "longtext"),
+        Field("video_url", "Recording link", "YouTube or any other link to the recording.", "url"),
+        Field("description", "Description", "Topics, reading list, remarks…", "longtext"),
     ]
 }
 
 
 def kind_items() -> list[dict]:
-    return [{"id": k.value, "label": f"{m.emoji} {m.label}"} for k, m in LESSON_KINDS.items()]
+    return [{"id": k.value, "label": m.label} for k, m in LESSON_KINDS.items()]
 
 
 # ------------------------------------------------------------------ list
@@ -86,18 +84,18 @@ async def list_getter(dialog_manager: DialogManager, **_):
     only_open = bool(dialog_manager.dialog_data.get("only_open"))
     done = sum(r.done for r in rows)
     visible = [r for r in rows if not (only_open and r.done)]
-    lines = [f"🎓 <b>Lessons</b> · {h(subject.title)}"]
+    lines = [f"<b>Lessons</b> · {h(subject.title)}"]
     if rows:
         lines.append(f"<code>{progress_line(done, len(rows))}</code>")
-        lines.append("<i>✅ — completed by you. Marks are personal.</i>")
+        lines.append("<i>✓ marks lessons you completed. Marks are personal.</i>")
         if only_open and not visible:
-            lines.append("\n<blockquote>All done here 🎉</blockquote>")
+            lines.append("\n<blockquote>All done here </blockquote>")
     else:
         lines.append("\n<blockquote>No lessons yet. Add the first lecture!</blockquote>")
     return {
         "text": "\n".join(lines),
         "items": [{"id": r.lesson.id, "label": lesson_button(r.lesson, r.done)} for r in visible],
-        "filter_label": "👁 Show all" if only_open else "⏳ Only unfinished",
+        "filter_label": "Show all" if only_open else "Only unfinished",
         "has_lessons": bool(rows),
     }
 
@@ -134,37 +132,35 @@ async def view_getter(dialog_manager: DialogManager, **_):
     materials = await s.materials.count_for_lesson(lesson.id)
     note = await s.progress.get_note(lesson.id, user_id)
     prev_id, next_id = await s.lessons.neighbours(lesson)
-    meta = lesson_kind(lesson.kind)
-
-    lines = [f"{meta.emoji} <b>{h(lesson_heading(lesson))}</b>"]
-    sub = f"📘 {h(subject.title)}"
+    lines = [f"<b>{h(lesson_heading(lesson))}</b>"]
+    sub = f"{h(subject.title)}"
     if lesson.held_on:
-        sub += f" · 📅 {fmt_date(lesson.held_on)}"
+        sub += f" · {fmt_date(lesson.held_on)}"
     lines.append(sub)
     if lesson.description:
         lines.append(quote(lesson.description))
     if lesson.video_url:
         lines.append(f'\n▶️ <a href="{h(lesson.video_url)}">Recording</a>')
     if lesson.summary:
-        source = "✨ AI" if lesson.summary_source == "ai" else "✍️ written"
+        source = "AI" if lesson.summary_source == "ai" else "written"
         summary_state = f"ready ({source})"
     else:
         summary_state = "—"
     lines.append(
-        f"\n📎 Materials: <b>{materials}</b> · 🧠 Summary: <b>{summary_state}</b>"
-        + (" · 🗒 You have a note" if note else "")
+        f"\nMaterials: <b>{materials}</b> · Summary: <b>{summary_state}</b>"
+        + (" · You have a note" if note else "")
     )
-    lines.append("\n✅ <b>Completed</b>" if completed else "\n⏳ <i>Not completed yet</i>")
+    lines.append("\n✓ <b>Completed</b>" if completed else "\n<i>Not completed yet</i>")
     return {
         "text": "\n".join(lines),
         "missing": False,
         "preview_url": lesson.video_url,
         "video_url": lesson.video_url,
-        "toggle_label": "↩️ Mark as not completed" if completed else "✅ Mark as completed",
+        "toggle_label": "Mark as not completed" if completed else "Mark as completed",
         "not_completed": not completed,
-        "materials_label": f"📎 Materials ({materials})",
-        "summary_label": "🧠 Summary" + (" ✓" if lesson.summary else ""),
-        "note_label": "🗒 My note" + (" ✓" if note else ""),
+        "materials_label": f"Materials ({materials})",
+        "summary_label": "Summary" + (" " if lesson.summary else ""),
+        "note_label": "My note" + (" " if note else ""),
         "has_prev": prev_id is not None,
         "has_next": next_id is not None,
         "share_link": deep_link(dialog_manager, f"l{lesson.id}"),
@@ -173,7 +169,7 @@ async def view_getter(dialog_manager: DialogManager, **_):
 
 async def toggle_completed(callback: CallbackQuery, _b, manager: DialogManager) -> None:
     done = await svc(manager).progress.toggle_lesson(data_id(manager, "lesson_id"), uid(manager))
-    await callback.answer("Marked as completed ✅" if done else "Mark removed")
+    await callback.answer("Marked as completed " if done else "Mark removed")
 
 
 async def go_neighbour(_c: CallbackQuery, button: Button, manager: DialogManager) -> None:
@@ -208,7 +204,7 @@ async def note_getter(dialog_manager: DialogManager, **_):
     current = quote(note, expandable=False) if note else "<i>No note yet.</i>"
     return {
         "text": (
-            "🗒 <b>My note</b> — private, only you can see it.\n\n"
+            "<b>My note</b> — private, only you can see it.\n\n"
             f"{current}\n\n<i>Send text to replace the note.</i>"
         ),
         "has_note": bool(note),
@@ -234,7 +230,7 @@ async def delete_note(_c: CallbackQuery, _b, manager: DialogManager) -> None:
 async def edit_getter(dialog_manager: DialogManager, **_):
     lesson = await svc(dialog_manager).lessons.get(data_id(dialog_manager, "lesson_id"))
     return {
-        "text": f"✏️ <b>Edit</b> · {h(lesson_heading(lesson))}",
+        "text": f"<b>Edit</b> · {h(lesson_heading(lesson))}",
         "can_delete": can_delete(dialog_manager, lesson.created_by),
     }
 
@@ -282,7 +278,7 @@ async def delete_getter(dialog_manager: DialogManager, **_):
     lesson = await svc(dialog_manager).lessons.get(data_id(dialog_manager, "lesson_id"))
     return {
         "text": (
-            f"🗑 Delete <b>{h(lesson_heading(lesson))}</b>?\n\n<blockquote>Its materials, "
+            f"Delete <b>{h(lesson_heading(lesson))}</b>?\n\n<blockquote>Its materials, "
             "summary, notes and everyone's progress will be removed.</blockquote>"
         )
     }
@@ -315,7 +311,7 @@ def lessons_dialog() -> Dialog:
                 hide_on_single_page=True,
             ),
             Row(
-                Button(Const("➕ Add lesson"), id="add", on_click=on_add, style=PRIMARY),
+                Button(Const("Add lesson"), id="add", on_click=on_add, style=PRIMARY),
                 Button(
                     Format("{filter_label}"),
                     id="filter",
@@ -353,23 +349,23 @@ def lessons_dialog() -> Dialog:
                     SwitchTo(Format("{note_label}"), id="note", state=LessonsSG.note),
                 ),
                 Row(
-                    Button(Const("⬅️ Prev"), id="prev", on_click=go_neighbour, when="has_prev"),
-                    Button(Const("Next ➡️"), id="next", on_click=go_neighbour, when="has_next"),
+                    Button(Const("Prev"), id="prev", on_click=go_neighbour, when="has_prev"),
+                    Button(Const("Next"), id="next", on_click=go_neighbour, when="has_next"),
                 ),
                 Row(
-                    CopyText(Const("🔗 Copy link"), Format("{share_link}")),
-                    SwitchTo(Const("✏️ Edit"), id="edit", state=LessonsSG.edit),
+                    CopyText(Const("Copy link"), Format("{share_link}")),
+                    SwitchTo(Const("Edit"), id="edit", state=LessonsSG.edit),
                 ),
                 when=lambda d, *_: not d["missing"],
             ),
-            SwitchTo(Const("📋 All lessons"), id="back", state=LessonsSG.list),
+            SwitchTo(Const("All lessons"), id="back", state=LessonsSG.list),
             state=LessonsSG.view,
             getter=view_getter,
         ),
         Window(
             Format("{text}"),
             MessageInput(on_note, content_types=["text"]),
-            Button(Const("🗑 Delete note"), id="del_note", on_click=delete_note, when="has_note"),
+            Button(Const("Delete note"), id="del_note", on_click=delete_note, when="has_note"),
             SwitchTo(BACK, id="back", state=LessonsSG.view),
             state=LessonsSG.note,
             getter=note_getter,
@@ -378,11 +374,11 @@ def lessons_dialog() -> Dialog:
             Format("{text}"),
             field_buttons(LESSON_FIELDS, LessonsSG.edit_field),
             Row(
-                SwitchTo(Const("🏷 Type"), id="kind", state=LessonsSG.edit_kind),
-                SwitchTo(Const("📅 Date"), id="date", state=LessonsSG.edit_date),
+                SwitchTo(Const("Type"), id="kind", state=LessonsSG.edit_kind),
+                SwitchTo(Const("Date"), id="date", state=LessonsSG.edit_date),
             ),
             SwitchTo(
-                Const("🗑 Delete lesson"),
+                Const("Delete lesson"),
                 id="delete",
                 state=LessonsSG.delete,
                 when="can_delete",
@@ -396,7 +392,7 @@ def lessons_dialog() -> Dialog:
             LessonsSG.edit_field, LessonsSG.edit, LESSON_FIELDS, load_field, save_field
         ),
         Window(
-            Const("🏷 <b>Lesson type</b>"),
+            Const("<b>Lesson type</b>"),
             Group(
                 Select(
                     Format("{item[label]}"),
@@ -412,11 +408,11 @@ def lessons_dialog() -> Dialog:
             getter=kind_getter,
         ),
         Window(
-            Format("📅 <b>When did it take place?</b>\n\nCurrent: <b>{current}</b>"),
+            Format("<b>When did it take place?</b>\n\nCurrent: <b>{current}</b>"),
             Calendar(id="held_on", on_click=on_date),
             Row(
-                Button(Const("📍 Today"), id="today", on_click=on_today),
-                Button(Const("🧹 Clear"), id="clear", on_click=on_clear_date),
+                Button(Const("Today"), id="today", on_click=on_today),
+                Button(Const("Clear"), id="clear", on_click=on_clear_date),
             ),
             SwitchTo(BACK, id="back", state=LessonsSG.edit),
             state=LessonsSG.edit_date,
@@ -425,7 +421,7 @@ def lessons_dialog() -> Dialog:
         Window(
             Format("{text}"),
             Row(
-                Button(Const("🗑 Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
+                Button(Const("Yes, delete"), id="confirm", on_click=on_delete, style=DANGER),
                 SwitchTo(CANCEL, id="cancel", state=LessonsSG.edit),
             ),
             state=LessonsSG.delete,
@@ -463,7 +459,7 @@ async def create_number_getter(dialog_manager: DialogManager, **_):
     return {
         "label": meta.label.lower(),
         "number": d["number"],
-        "use_label": f"✅ {meta.label} {d['number']}",
+        "use_label": f"{meta.label} {d['number']}",
     }
 
 
@@ -522,7 +518,7 @@ async def skip_video(_c: CallbackQuery, _b, manager: DialogManager) -> None:
 def lesson_create_dialog() -> Dialog:
     return Dialog(
         Window(
-            Format("➕ <b>New lesson</b> · {subject}\n\nWhat kind of session is it?"),
+            Format("<b>New lesson</b> · {subject}\n\nWhat kind of session is it?"),
             Group(
                 Select(
                     Format("{item[label]}"),
@@ -539,7 +535,7 @@ def lesson_create_dialog() -> Dialog:
         ),
         Window(
             Format(
-                "🔢 <b>Number</b>\n\nThe next {label} number is <b>{number}</b>.\n"
+                "<b>Number</b>\n\nThe next {label} number is <b>{number}</b>.\n"
                 "<i>Tap to confirm or send another number.</i>"
             ),
             SwitchTo(Format("{use_label}"), id="use", state=LessonCreateSG.title, style=PRIMARY),
@@ -549,7 +545,7 @@ def lesson_create_dialog() -> Dialog:
             getter=create_number_getter,
         ),
         Window(
-            Format("📝 <b>{heading}</b>\n\nSend the topic / title of the session."),
+            Format("<b>{heading}</b>\n\nSend the topic / title of the session."),
             MessageInput(create_title, content_types=["text"]),
             SwitchTo(BACK, id="back", state=LessonCreateSG.number),
             Cancel(CANCEL),
@@ -562,7 +558,7 @@ def lesson_create_dialog() -> Dialog:
                 "<i>Forwarding a message that contains the link works too.</i>"
             ),
             MessageInput(create_video),
-            Button(Const("⏭ No recording — create"), id="skip", on_click=skip_video),
+            Button(Const("No recording — create"), id="skip", on_click=skip_video),
             SwitchTo(BACK, id="back", state=LessonCreateSG.title),
             state=LessonCreateSG.video,
         ),

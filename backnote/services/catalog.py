@@ -256,14 +256,12 @@ class MaterialService(BaseService):
         title: str,
         created_by: int,
         lesson_id: int | None = None,
-        assignment_id: int | None = None,
         url: str | None = None,
         file_id: str | None = None,
     ) -> Material:
         material = Material(
             subject_id=subject_id,
             lesson_id=lesson_id,
-            assignment_id=assignment_id,
             kind=kind,
             title=title,
             url=url,
@@ -296,16 +294,13 @@ class MaterialService(BaseService):
         *,
         subject_id: int,
         lesson_id: int | None = None,
-        assignment_id: int | None = None,
     ) -> list[Material]:
-        """Materials of exactly one target: an assignment, a lesson, or the subject itself."""
+        """Materials of a lesson, or of the subject itself when lesson_id is None."""
         query = select(Material).where(Material.subject_id == subject_id)
-        if assignment_id is not None:
-            query = query.where(Material.assignment_id == assignment_id)
-        elif lesson_id is not None:
+        if lesson_id is not None:
             query = query.where(Material.lesson_id == lesson_id)
         else:
-            query = query.where(Material.lesson_id.is_(None), Material.assignment_id.is_(None))
+            query = query.where(Material.lesson_id.is_(None))
         async with self._sm() as s:
             return list(await s.scalars(query.order_by(Material.created_at, Material.id)))
 

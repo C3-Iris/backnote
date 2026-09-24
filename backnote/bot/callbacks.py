@@ -7,5 +7,5 @@ class AccessCb(CallbackData, prefix="acc"):
 
 
 class OpenCb(CallbackData, prefix="open"):
-    target: str  # "lesson" | "assignment" | "summary"
+    target: str  # "lesson" | "summary"
     id: int

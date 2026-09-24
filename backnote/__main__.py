@@ -8,7 +8,6 @@ from aiogram.types import BotCommand, LinkPreviewOptions
 
 from backnote.bot.factory import build_dispatcher
 from backnote.bot.notifier import Notifier
-from backnote.bot.reminders import reminders_loop
 from backnote.config import Settings
 from backnote.db import create_engine, create_sessionmaker
 from backnote.db.migrate import upgrade
@@ -31,20 +30,14 @@ async def run(settings: Settings) -> None:
             link_preview=LinkPreviewOptions(is_disabled=True),
         ),
     )
-    reminders: asyncio.Task | None = None
     try:
         me = await bot.get_me()
         notifier = Notifier(bot, services, settings.tz)
         dp = build_dispatcher(settings, services, notifier, bot_username=me.username)
         await bot.set_my_commands(COMMANDS)
-        reminders = asyncio.create_task(
-            reminders_loop(services, notifier, settings.reminder_hours, settings.tz)
-        )
         logging.info("Starting @%s (AI summaries: %s)", me.username, settings.ai_enabled)
         await dp.start_polling(bot)
     finally:
-        if reminders:
-            reminders.cancel()
         await bot.session.close()
         await engine.dispose()
 

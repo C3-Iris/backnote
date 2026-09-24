@@ -22,7 +22,7 @@ from backnote.bot.dialogs.states import AdminSG
 from backnote.db.models import UserStatus
 from backnote.formatting import fmt_datetime, h
 
-STATUS_EMOJI = {UserStatus.ACTIVE: "✅", UserStatus.PENDING: "⏳", UserStatus.BLOCKED: "⛔"}
+STATUS_EMOJI = {UserStatus.ACTIVE: "", UserStatus.PENDING: "", UserStatus.BLOCKED: ""}
 
 
 async def menu_getter(dialog_manager: DialogManager, **_):
@@ -30,14 +30,14 @@ async def menu_getter(dialog_manager: DialogManager, **_):
     counts = {status: sum(u.status == status for u in users) for status in UserStatus}
     return {
         "text": (
-            "🛡 <b>Admin panel</b>\n"
-            f"<blockquote>✅ {counts[UserStatus.ACTIVE]} members · "
-            f"⏳ {counts[UserStatus.PENDING]} requests · "
-            f"⛔ {counts[UserStatus.BLOCKED]} blocked</blockquote>\n"
+            "<b>Admin panel</b>\n"
+            f"<blockquote>{counts[UserStatus.ACTIVE]} members · "
+            f"{counts[UserStatus.PENDING]} requests · "
+            f"{counts[UserStatus.BLOCKED]} blocked</blockquote>\n"
             "<i>Only whitelisted members can use the bot. New people who press /start "
             "appear as requests.</i>"
         ),
-        "requests_label": f"⏳ Requests ({counts[UserStatus.PENDING]})",
+        "requests_label": f"Requests ({counts[UserStatus.PENDING]})",
     }
 
 
@@ -52,7 +52,7 @@ def _set_filter(status: str | None):
 async def users_getter(dialog_manager: DialogManager, **_):
     status = dialog_manager.dialog_data.get("filter")
     users = await svc(dialog_manager).users.list_users(UserStatus(status) if status else None)
-    title = "⏳ <b>Access requests</b>" if status == UserStatus.PENDING else "👥 <b>People</b>"
+    title = "<b>Access requests</b>" if status == UserStatus.PENDING else "<b>People</b>"
     body = "" if users else "\n\n<blockquote>Nobody here.</blockquote>"
     return {
         "text": title + body,
@@ -60,7 +60,7 @@ async def users_getter(dialog_manager: DialogManager, **_):
             {
                 "id": u.id,
                 "label": f"{STATUS_EMOJI.get(u.status, '')} {u.display_name}"
-                + (" 👑" if u.id == settings(dialog_manager).admin_id else ""),
+                + (" " if u.id == settings(dialog_manager).admin_id else ""),
             }
             for u in users
         ],
@@ -88,11 +88,11 @@ async def user_getter(dialog_manager: DialogManager, **_):
         f"🆔 <code>{user.id}</code>",
     ]
     if user.username:
-        lines.append(f"👤 @{h(user.username)}")
-    lines.append(f"📌 Status: <b>{user.status}</b>" + (" · admin" if is_owner else ""))
-    lines.append(f"🗓 Joined: {fmt_datetime(user.created_at, tz)}")
+        lines.append(f"@{h(user.username)}")
+    lines.append(f"Status: <b>{user.status}</b>" + (" · admin" if is_owner else ""))
+    lines.append(f"Joined: {fmt_datetime(user.created_at, tz)}")
     if user.last_seen_at:
-        lines.append(f"👀 Last seen: {fmt_datetime(user.last_seen_at, tz)}")
+        lines.append(f"Last seen: {fmt_datetime(user.last_seen_at, tz)}")
     return {
         "text": "\n".join(lines),
         "can_allow": user.status != UserStatus.ACTIVE,
@@ -103,7 +103,7 @@ async def user_getter(dialog_manager: DialogManager, **_):
 
 async def _notify_granted(manager: DialogManager, user_id: int) -> None:
     await notifier(manager).send(
-        user_id, "✅ <b>You now have access to Backnote.</b>\nPress /start to open the menu.", None
+        user_id, "<b>You now have access to Backnote.</b>\nPress /start to open the menu.", None
     )
 
 
@@ -164,7 +164,7 @@ async def broadcast_getter(dialog_manager: DialogManager, **_):
 
 
 async def on_broadcast_send(callback: CallbackQuery, _b, manager: DialogManager) -> None:
-    text = "📣 <b>Announcement</b>\n\n" + manager.dialog_data.pop("broadcast", "")
+    text = "<b>Announcement</b>\n\n" + manager.dialog_data.pop("broadcast", "")
     n = notifier(manager)
     recipients = await svc(manager).users.active_ids(exclude=uid(manager))
 
@@ -183,7 +183,7 @@ def admin_dialog() -> Dialog:
         Window(
             Format("{text}"),
             Row(
-                Button(Const("👥 Everyone"), id="all", on_click=_set_filter(None)),
+                Button(Const("Everyone"), id="all", on_click=_set_filter(None)),
                 Button(
                     Format("{requests_label}"),
                     id="pending",
@@ -191,8 +191,8 @@ def admin_dialog() -> Dialog:
                 ),
             ),
             Row(
-                SwitchTo(Const("➕ Add member"), id="add", state=AdminSG.add, style=PRIMARY),
-                SwitchTo(Const("📣 Broadcast"), id="broadcast", state=AdminSG.broadcast),
+                SwitchTo(Const("Add member"), id="add", state=AdminSG.add, style=PRIMARY),
+                SwitchTo(Const("Broadcast"), id="broadcast", state=AdminSG.broadcast),
             ),
             Cancel(BACK),
             state=AdminSG.menu,
@@ -222,16 +222,16 @@ def admin_dialog() -> Dialog:
             Format("{text}"),
             Row(
                 Button(
-                    Const("✅ Allow"),
+                    Const("Allow"),
                     id="allow",
                     on_click=on_allow,
                     when="can_allow",
                     style=SUCCESS,
                 ),
-                Button(Const("⛔ Block"), id="block", on_click=on_block, when="can_block"),
+                Button(Const("Block"), id="block", on_click=on_block, when="can_block"),
             ),
             Button(
-                Const("🗑 Remove"), id="remove", on_click=on_remove, when="can_remove", style=DANGER
+                Const("Remove"), id="remove", on_click=on_remove, when="can_remove", style=DANGER
             ),
             SwitchTo(BACK, id="back", state=AdminSG.users),
             state=AdminSG.user,
@@ -239,7 +239,7 @@ def admin_dialog() -> Dialog:
         ),
         Window(
             Const(
-                "➕ <b>Add a member</b>\n\nSend one of:\n• their numeric Telegram ID "
+                "<b>Add a member</b>\n\nSend one of:\n• their numeric Telegram ID "
                 "(they can get it with /id)\n• their contact\n• a message forwarded from them"
             ),
             MessageInput(on_add_input),
@@ -247,17 +247,15 @@ def admin_dialog() -> Dialog:
             state=AdminSG.add,
         ),
         Window(
-            Const("📣 <b>Broadcast</b>\n\nSend the message for all members. Formatting is kept."),
+            Const("<b>Broadcast</b>\n\nSend the message for all members. Formatting is kept."),
             MessageInput(on_broadcast_text, content_types=["text"]),
             SwitchTo(CANCEL, id="cancel", state=AdminSG.menu),
             state=AdminSG.broadcast,
         ),
         Window(
-            Format(
-                "📣 Send this to <b>{count}</b> member(s)?\n\n<blockquote>{preview}</blockquote>"
-            ),
+            Format("Send this to <b>{count}</b> member(s)?\n\n<blockquote>{preview}</blockquote>"),
             Row(
-                Button(Const("📤 Send"), id="send", on_click=on_broadcast_send, style=PRIMARY),
+                Button(Const("Send"), id="send", on_click=on_broadcast_send, style=PRIMARY),
                 SwitchTo(CANCEL, id="cancel", state=AdminSG.menu),
             ),
             state=AdminSG.broadcast_confirm,
