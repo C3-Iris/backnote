@@ -7,4 +7,14 @@ data/
 *.db-journal
 .pytest_cache/
 .ruff_cache/
-.hoplite/
+.hoplite
+node_modules/
+dist/
+.env.local
+.env.*.local
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
